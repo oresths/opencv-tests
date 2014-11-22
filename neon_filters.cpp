@@ -35,7 +35,7 @@ struct SymmRowSmallVec_8u32s
         src += (_ksize/2)*cn;
         width *= cn;
 
-        __m128i z = _mm_setzero_si128();
+        uint16x8_t z = vdupq_n_u16(0);
         if( symmetrical )
         {
             if( _ksize == 1 )
@@ -43,8 +43,22 @@ struct SymmRowSmallVec_8u32s
             if( _ksize == 3 )
             {
                 if( kx[0] == 2 && kx[1] == 1 )
-                    for( ; i <= width - 16; i += 16, src += 16 )
+                    for( ; i <= width - 8; i += 8, src += 8 )
                     {
+                        uint8x8_t x0, x1, x2;
+
+                        x0 = vld1_u8( (uint8_t *) (src - cn) );
+                        x1 = vld1_u8( (uint8_t *) (src) );
+                        x2 = vld1_u8( (uint8_t *) (src + cn) );
+
+                        y0 = vaddl_u8(x0, x2);
+                        y1 = vshll_n_u8(x1, 1);
+                        y2 = vaddq_u16(y0, y1);
+
+                        uint16x8x2_t d;
+                        d.val[0] = y2; d.val[1] = z;
+                        vst2q_u16( (dst + i), uint16x8x2_t d );
+
                         __m128i x0, x1, x2, y0, y1, y2;
                         x0 = _mm_loadu_si128((__m128i*)(src - cn));
                         x1 = _mm_loadu_si128((__m128i*)src);
