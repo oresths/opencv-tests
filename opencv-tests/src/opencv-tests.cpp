@@ -20,8 +20,9 @@ using namespace std;
 int main()
 {
 	unsigned char m[5][5] = {{1,2,3,4,5}, {6,7,8,9,10}, {11,12,13,14,15}, {16,17,18,19,20}, {21,22,23,24,25}};
-	Mat ky = (Mat_<unsigned char>(1,3) << 1, 2, 1);
 	Mat kx = (Mat_<signed char>(1,3) << 1, 0, -1);
+	Mat ky = (Mat_<unsigned char>(1,3) << 1, 2, 1);
+
 	Mat dst;
 
 	sepFilter2D(Mat(5, 5, CV_8U, m), dst, CV_16S, kx, ky, Point(-1, -1), 0, BORDER_DEFAULT);
