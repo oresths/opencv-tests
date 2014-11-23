@@ -22,8 +22,9 @@ struct SymmRowSmallVec_8u32s
 
     int operator()(const uchar* src, uchar* _dst, int width, int cn) const
     {
-        if( !checkHardwareSupport(CV_CPU_NEON) )
-            return 0;
+        //Uncomment the two following lines when runtime support for neon is implemented.
+        // if( !checkHardwareSupport(CV_CPU_NEON) )
+        //     return 0;
 
         int i = 0, j, k, _ksize = kernel.rows + kernel.cols - 1;
         int* dst = (int*)_dst;
@@ -36,6 +37,8 @@ struct SymmRowSmallVec_8u32s
         width *= cn;
 
         uint16x8_t z = vdupq_n_u16(0);
+        uint8x8_t dz = vdup_n_u8(0);
+
         if( symmetrical )
         {
             if( _ksize == 1 )
@@ -58,7 +61,7 @@ struct SymmRowSmallVec_8u32s
 
                         uint16x8x2_t d;
                         d.val[0] = y2; d.val[1] = z;
-                        vst2q_u16( (dst + i), uint16x8x2_t d );
+                        vst2q_u16( (dst + i), d );
 
                         // __m128i x0, x1, x2, y0, y1, y2;
                         // x0 = _mm_loadu_si128((__m128i*)(src - cn));
@@ -106,12 +109,19 @@ struct SymmRowSmallVec_8u32s
                         x0 = vld1_u8( (uint8_t *) (src - cn) );
                         x1 = vld1_u8( (uint8_t *) (src + cn) );
 
-                        uint16x8_t y0;
-                        y0 = vsubl_u8(x1, x0);
+                        int16x8_t y0;
+                        // y0 = vsubl_u8(x1, x0);
 
-                        uint16x8x2_t d;
-                        d.val[0] = y0; d.val[1] = z;
-                        vst2q_u16( (dst + i), uint16x8x2_t d );
+                        y0 = vsubq_s16(vreinterpretq_s16_u16(vaddl_u8(x1, dz)),
+                                vreinterpretq_s16_u16(vaddl_u8(x0, dz)));
+
+                        vst1q_s32((int32_t *)(dst + i), vmovl_s16(vget_low_s16(y0)));
+                        vst1q_s32((int32_t *)(dst + i + 4), vmovl_s16(vget_high_s16(y0)));
+
+//                        uint16x8x2_t d;
+//                        d.val[0] = y0; d.val[1] = z;
+//                        vst2q_u16( (dst + i), d );
+
 
 
                         // __m128i x0, x1, y0;
@@ -178,8 +188,9 @@ struct SymmColumnSmallVec_32s16s
 
     int operator()(const uchar** _src, uchar* _dst, int width) const
     {
-        if( !checkHardwareSupport(CV_CPU_NEON) )
-            return 0;
+        //Uncomment the two following lines when runtime support for neon is implemented.
+        // if( !checkHardwareSupport(CV_CPU_NEON) )
+        //     return 0;
 
         int ksize2 = (kernel.rows + kernel.cols - 1)/2;
         const float* ky = kernel.ptr<float>() + ksize2;
@@ -251,3 +262,20 @@ struct SymmColumnSmallVec_32s16s
     float delta;
     Mat kernel;
 };
+
+
+
+
+typedef RowNoVec RowVec_8u32s;
+typedef RowNoVec RowVec_16s32f;
+typedef RowNoVec RowVec_32f;
+//typedef SymmRowSmallNoVec SymmRowSmallVec_8u32s;
+typedef SymmRowSmallNoVec SymmRowSmallVec_32f;
+typedef ColumnNoVec SymmColumnVec_32s8u;
+typedef ColumnNoVec SymmColumnVec_32f16s;
+typedef ColumnNoVec SymmColumnVec_32f;
+// typedef SymmColumnSmallNoVec SymmColumnSmallVec_32s16s;
+typedef SymmColumnSmallNoVec SymmColumnSmallVec_32f;
+typedef FilterNoVec FilterVec_8u;
+typedef FilterNoVec FilterVec_8u16s;
+typedef FilterNoVec FilterVec_32f;
