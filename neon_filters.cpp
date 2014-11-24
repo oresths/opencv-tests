@@ -33,7 +33,7 @@ struct SymmRowSmallVec_8u32s
         if( !smallValues )
             return 0;
 
-        src += (_ksize/2)*cn;
+        // src += (_ksize/2)*cn;
         width *= cn;
 
         uint16x8_t z = vdupq_n_u16(0);
@@ -45,14 +45,17 @@ struct SymmRowSmallVec_8u32s
                 return 0;
             if( _ksize == 3 )
             {
-                if( kx[0] == 2 && kx[1] == 1 )
+                if( kx[0] == 2 && kx[1] == 1 && cn == 1 )
                     for( ; i <= width - 8; i += 8, src += 8 )
                     {
                         uint8x8_t x0, x1, x2;
+                        uint8x16_t p;
 
-                        x0 = vld1_u8( (uint8_t *) (src - cn) );
-                        x1 = vld1_u8( (uint8_t *) (src) );
-                        x2 = vld1_u8( (uint8_t *) (src + cn) );
+                        p = vld1q_u8( (uint8_t *) (src) );
+
+                        x0 = vget_low_u8(p);
+                        x1 = vext_u8(vget_low_u8(p), vget_high_u8(p), 1);
+                        x2 = vext_u8(vget_low_u8(p), vget_high_u8(p), 2);
 
                         uint16x8_t y0, y1, y2;
                         y0 = vaddl_u8(x0, x2);
