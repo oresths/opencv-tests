@@ -61,7 +61,7 @@ struct SymmRowSmallVec_8u32s
 
                         uint16x8x2_t d;
                         d.val[0] = y2; d.val[1] = z;
-                        vst2q_u16( (dst + i), d );
+                        vst2q_u16( (uint16_t *) (dst + i), d );
 
                         // __m128i x0, x1, x2, y0, y1, y2;
                         // x0 = _mm_loadu_si128((__m128i*)(src - cn));
@@ -110,18 +110,12 @@ struct SymmRowSmallVec_8u32s
                         x1 = vld1_u8( (uint8_t *) (src + cn) );
 
                         int16x8_t y0;
-                        // y0 = vsubl_u8(x1, x0);
 
                         y0 = vsubq_s16(vreinterpretq_s16_u16(vaddl_u8(x1, dz)),
                                 vreinterpretq_s16_u16(vaddl_u8(x0, dz)));
 
                         vst1q_s32((int32_t *)(dst + i), vmovl_s16(vget_low_s16(y0)));
                         vst1q_s32((int32_t *)(dst + i + 4), vmovl_s16(vget_high_s16(y0)));
-
-//                        uint16x8x2_t d;
-//                        d.val[0] = y0; d.val[1] = z;
-//                        vst2q_u16( (dst + i), d );
-
 
 
                         // __m128i x0, x1, y0;

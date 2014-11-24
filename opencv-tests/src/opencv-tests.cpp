@@ -38,7 +38,8 @@ int main()
 
     double exec_time = (double)getTickCount();
 
-    Sobel(grey, sobelx, CV_16S, 1, 0);//x
+//    Sobel(grey, sobelx, CV_16S, 1, 0);//x
+    Sobel(grey, sobelx, CV_16S, 0, 1);//y
 
     exec_time = ((double)getTickCount() - exec_time)*1000./getTickFrequency();
 	cout << "exec_time = " << exec_time << " ms";
