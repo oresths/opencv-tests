@@ -36,25 +36,37 @@ struct SymmRowSmallVec_8u32s
         // src += (_ksize/2)*cn;
         width *= cn;
 
-        uint16x8_t z = vdupq_n_u16(0);
-        uint8x8_t dz = vdup_n_u8(0);
-
         if( symmetrical )
         {
             if( _ksize == 1 )
                 return 0;
             if( _ksize == 3 )
             {
+<<<<<<< HEAD
                 if( kx[0] == 2 && kx[1] == 1 && cn == 1 )
 //                    return 0;
                     for( ; i <= width - 16; i += 16, src += 16 )
+=======
+                if( kx[0] == 2 && kx[1] == 1 )
+                {
+                    uint16x8_t zq = vdupq_n_u16(0);
+
+                    for( ; i <= width - 8; i += 8, src += 8 )
+>>>>>>> stash
                     {
+<<<<<<< HEAD
 //                        uint8x8_t x0, x1, x2, x3, x4, x5, p;
                         uint8x8_t x1, x2, x4, x5, p;
                         uint8x16_t pq;
 
                         pq = vld1q_u8( (uint8_t *) (src) );
                         p = vld1_u8( (uint8_t *) (src+16) );
+=======
+                        uint8x8_t x0, x1, x2;
+                        x0 = vld1_u8( (uint8_t *) (src - cn) );
+                        x1 = vld1_u8( (uint8_t *) (src) );
+                        x2 = vld1_u8( (uint8_t *) (src + cn) );
+>>>>>>> stash
 
 //                        x0 = vget_low_u8(pq);
                         x1 = vext_u8(vget_low_u8(pq), vget_high_u8(pq), 1);
@@ -71,6 +83,7 @@ struct SymmRowSmallVec_8u32s
                         y4 = vshll_n_u8(x4, 1);
                         y5 = vaddq_u16(y3, y4);
 
+<<<<<<< HEAD
                         uint16x8x2_t d1, d2;
                         d1.val[0] = y2; d1.val[1] = z;
                         d2.val[0] = y5; d2.val[1] = z;
@@ -93,7 +106,13 @@ struct SymmRowSmallVec_8u32s
                         // _mm_store_si128((__m128i*)(dst + i + 4), _mm_unpackhi_epi16(x0, z));
                         // _mm_store_si128((__m128i*)(dst + i + 8), _mm_unpacklo_epi16(y0, z));
                         // _mm_store_si128((__m128i*)(dst + i + 12), _mm_unpackhi_epi16(y0, z));
+=======
+                        uint16x8x2_t str;
+                        str.val[0] = y2; str.val[1] = zq;
+                        vst2q_u16( (uint16_t *) (dst + i), str );
+>>>>>>> stash
                     }
+                }
                 else if( kx[0] == -2 && kx[1] == 1 )
                     return 0;
                 else
@@ -116,32 +135,23 @@ struct SymmRowSmallVec_8u32s
             if( _ksize == 3 )
             {
                 if( kx[0] == 0 && kx[1] == 1 )
+                {
+                    uint8x8_t z = vdup_n_u8(0);
+
                     for( ; i <= width - 8; i += 8, src += 8 )
                     {
                         uint8x8_t x0, x1;
-
                         x0 = vld1_u8( (uint8_t *) (src - cn) );
                         x1 = vld1_u8( (uint8_t *) (src + cn) );
 
                         int16x8_t y0;
-
-                        y0 = vsubq_s16(vreinterpretq_s16_u16(vaddl_u8(x1, dz)),
-                                vreinterpretq_s16_u16(vaddl_u8(x0, dz)));
+                        y0 = vsubq_s16(vreinterpretq_s16_u16(vaddl_u8(x1, z)),
+                                vreinterpretq_s16_u16(vaddl_u8(x0, z)));
 
                         vst1q_s32((int32_t *)(dst + i), vmovl_s16(vget_low_s16(y0)));
                         vst1q_s32((int32_t *)(dst + i + 4), vmovl_s16(vget_high_s16(y0)));
-
-
-                        // __m128i x0, x1, y0;
-                        // x0 = _mm_loadu_si128((__m128i*)(src + cn));
-                        // x1 = _mm_loadu_si128((__m128i*)(src - cn));
-                        // y0 = _mm_sub_epi16(_mm_unpackhi_epi8(x0, z), _mm_unpackhi_epi8(x1, z));
-                        // x0 = _mm_sub_epi16(_mm_unpacklo_epi8(x0, z), _mm_unpacklo_epi8(x1, z));
-                        // _mm_store_si128((__m128i*)(dst + i), _mm_srai_epi32(_mm_unpacklo_epi16(x0, x0),16));
-                        // _mm_store_si128((__m128i*)(dst + i + 4), _mm_srai_epi32(_mm_unpackhi_epi16(x0, x0),16));
-                        // _mm_store_si128((__m128i*)(dst + i + 8), _mm_srai_epi32(_mm_unpacklo_epi16(y0, y0),16));
-                        // _mm_store_si128((__m128i*)(dst + i + 12), _mm_srai_epi32(_mm_unpackhi_epi16(y0, y0),16));
                     }
+                }
                 else
                 {
                     return 0;
