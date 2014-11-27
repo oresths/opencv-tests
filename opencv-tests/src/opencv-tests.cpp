@@ -47,7 +47,7 @@ int main()
 
     double minVal, maxVal;
     minMaxLoc(sobelx, &minVal, &maxVal); //find minimum and maximum intensities
-    cout << "minVal : " << minVal << endl << "maxVal : " << maxVal << endl;
+//    cout << "minVal : " << minVal << endl << "maxVal : " << maxVal << endl;
 
     Mat draw;
     sobelx.convertTo(draw, CV_8U, 255.0/(maxVal - minVal), -minVal * 255.0/(maxVal - minVal));

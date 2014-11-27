@@ -33,7 +33,7 @@ struct SymmRowSmallVec_8u32s
         if( !smallValues )
             return 0;
 
-        // src += (_ksize/2)*cn;
+        src += (_ksize/2)*cn;
         width *= cn;
 
         uint16x8_t z = vdupq_n_u16(0);
@@ -45,26 +45,31 @@ struct SymmRowSmallVec_8u32s
                 return 0;
             if( _ksize == 3 )
             {
-                if( kx[0] == 2 && kx[1] == 1 && cn == 1 )
-                    for( ; i <= width - 8; i += 8, src += 8 )
+                if( kx[0] == 2 && kx[1] == 1 )
+                    for( ; i <= width - 16; i += 16, src += 16 )
                     {
-                        uint8x8_t x0, x1, x2;
-                        uint8x16_t p;
+                        uint8x16_t x0, x1, x2;
 
-                        p = vld1q_u8( (uint8_t *) (src) );
+                        x0 = vld1q_u8( (uint8_t *) (src - cn) );
+                        x1 = vld1q_u8( (uint8_t *) (src) );
+                        x2 = vld1q_u8( (uint8_t *) (src + cn) );
+                        vld1q_u8(__transfersize(16) uint8_t const * ptr)
 
-                        x0 = vget_low_u8(p);
-                        x1 = vext_u8(vget_low_u8(p), vget_high_u8(p), 1);
-                        x2 = vext_u8(vget_low_u8(p), vget_high_u8(p), 2);
+                        uint16x8_t y0, y1, y2, y3, y4, y5;
 
-                        uint16x8_t y0, y1, y2;
-                        y0 = vaddl_u8(x0, x2);
-                        y1 = vshll_n_u8(x1, 1);
+                        y0 = vaddl_u8(vget_low_u8(x0), vget_low_u8(x2));
+                        y1 = vshll_n_u8(vget_low_u8(x1), 1);
                         y2 = vaddq_u16(y0, y1);
+                        y3 = vaddl_u8(vget_high_u8(x0), vget_high_u8(x2));
+                        y4 = vshll_n_u8(vget_high_u8(x1), 1);
+                        y5 = vaddq_u16(y3, y4);
 
-                        uint16x8x2_t d;
-                        d.val[0] = y2; d.val[1] = z;
-                        vst2q_u16( (uint16_t *) (dst + i), d );
+                        uint16x8x2_t d1, d2;
+                        d1.val[0] = y2; d1.val[1] = z;
+                        d2.val[0] = y5; d2.val[1] = z;
+                        vst2q_u16( (uint16_t *) (dst + i), d1 );
+                        vst2q_u16( (uint16_t *) (dst + i +8), d2 );
+
 
                         // __m128i x0, x1, x2, y0, y1, y2;
                         // x0 = _mm_loadu_si128((__m128i*)(src - cn));
