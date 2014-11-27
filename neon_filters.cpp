@@ -33,7 +33,7 @@ struct SymmRowSmallVec_8u32s
         if( !smallValues )
             return 0;
 
-        // src += (_ksize/2)*cn;
+        src += (_ksize/2)*cn;
         width *= cn;
 
         if( symmetrical )
@@ -42,75 +42,25 @@ struct SymmRowSmallVec_8u32s
                 return 0;
             if( _ksize == 3 )
             {
-<<<<<<< HEAD
-                if( kx[0] == 2 && kx[1] == 1 && cn == 1 )
-//                    return 0;
-                    for( ; i <= width - 16; i += 16, src += 16 )
-=======
                 if( kx[0] == 2 && kx[1] == 1 )
                 {
                     uint16x8_t zq = vdupq_n_u16(0);
 
                     for( ; i <= width - 8; i += 8, src += 8 )
->>>>>>> stash
                     {
-<<<<<<< HEAD
-//                        uint8x8_t x0, x1, x2, x3, x4, x5, p;
-                        uint8x8_t x1, x2, x4, x5, p;
-                        uint8x16_t pq;
-
-                        pq = vld1q_u8( (uint8_t *) (src) );
-                        p = vld1_u8( (uint8_t *) (src+16) );
-=======
                         uint8x8_t x0, x1, x2;
                         x0 = vld1_u8( (uint8_t *) (src - cn) );
                         x1 = vld1_u8( (uint8_t *) (src) );
                         x2 = vld1_u8( (uint8_t *) (src + cn) );
->>>>>>> stash
 
-//                        x0 = vget_low_u8(pq);
-                        x1 = vext_u8(vget_low_u8(pq), vget_high_u8(pq), 1);
-                        x2 = vext_u8(vget_low_u8(pq), vget_high_u8(pq), 2);
-//                        x3 = vget_high_u8(pq);
-                        x4 = vext_u8(vget_high_u8(pq), p, 1);
-                        x5 = vext_u8(vget_high_u8(pq), p, 2);
-
-                        uint16x8_t y0, y1, y2, y3, y4, y5;
-                        y0 = vaddl_u8(vget_low_u8(pq), x2);
+                        uint16x8_t y0, y1, y2;
+                        y0 = vaddl_u8(x0, x2);
                         y1 = vshll_n_u8(x1, 1);
                         y2 = vaddq_u16(y0, y1);
-                        y3 = vaddl_u8(vget_high_u8(pq), x5);
-                        y4 = vshll_n_u8(x4, 1);
-                        y5 = vaddq_u16(y3, y4);
 
-<<<<<<< HEAD
-                        uint16x8x2_t d1, d2;
-                        d1.val[0] = y2; d1.val[1] = z;
-                        d2.val[0] = y5; d2.val[1] = z;
-                        vst2q_u16( (uint16_t *) (dst + i), d1 );
-                        vst2q_u16( (uint16_t *) (dst + i +8), d2 );
-
-                        // __m128i x0, x1, x2, y0, y1, y2;
-                        // x0 = _mm_loadu_si128((__m128i*)(src - cn));
-                        // x1 = _mm_loadu_si128((__m128i*)src);
-                        // x2 = _mm_loadu_si128((__m128i*)(src + cn));
-                        // y0 = _mm_unpackhi_epi8(x0, z);
-                        // x0 = _mm_unpacklo_epi8(x0, z);
-                        // y1 = _mm_unpackhi_epi8(x1, z);
-                        // x1 = _mm_unpacklo_epi8(x1, z);
-                        // y2 = _mm_unpackhi_epi8(x2, z);
-                        // x2 = _mm_unpacklo_epi8(x2, z);
-                        // x0 = _mm_add_epi16(x0, _mm_add_epi16(_mm_add_epi16(x1, x1), x2));
-                        // y0 = _mm_add_epi16(y0, _mm_add_epi16(_mm_add_epi16(y1, y1), y2));
-                        // _mm_store_si128((__m128i*)(dst + i), _mm_unpacklo_epi16(x0, z));
-                        // _mm_store_si128((__m128i*)(dst + i + 4), _mm_unpackhi_epi16(x0, z));
-                        // _mm_store_si128((__m128i*)(dst + i + 8), _mm_unpacklo_epi16(y0, z));
-                        // _mm_store_si128((__m128i*)(dst + i + 12), _mm_unpackhi_epi16(y0, z));
-=======
                         uint16x8x2_t str;
                         str.val[0] = y2; str.val[1] = zq;
                         vst2q_u16( (uint16_t *) (dst + i), str );
->>>>>>> stash
                     }
                 }
                 else if( kx[0] == -2 && kx[1] == 1 )
