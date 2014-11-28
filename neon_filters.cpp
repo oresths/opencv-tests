@@ -26,7 +26,7 @@ struct SymmRowSmallVec_8u32s
         // if( !checkHardwareSupport(CV_CPU_NEON) )
         //     return 0;
 
-        int i = 0, j, k, _ksize = kernel.rows + kernel.cols - 1;
+        int i = 0, _ksize = kernel.rows + kernel.cols - 1;
         int* dst = (int*)_dst;
         bool symmetrical = (symmetryType & KERNEL_SYMMETRICAL) != 0;
         const int* kx = kernel.ptr<int>() + _ksize/2;
@@ -67,7 +67,76 @@ struct SymmRowSmallVec_8u32s
                     return 0;
                 else
                 {
-                    return 0;
+                    int32x4_t k32 = vdupq_n_s32(0);
+                    k32 = vld1q_lane_s32(kx, k32, 0);
+                    k32 = vld1q_lane_s32(kx + 1, k32, 1);
+
+                    int16x4_t k = vqmovn_s32(k32);
+
+                    uint8x8_t z = vdup_n_u8(0);
+
+                    int32x4_t accl = vdupq_n_s32(0), acch = vdupq_n_s32(0);
+
+                    for( ; i <= width - 8; i += 8, src += 8 )
+                    {
+                        uint8x8_t x0, x1, x2;
+                        x0 = vld1_u8( (uint8_t *) (src - cn) );
+                        x1 = vld1_u8( (uint8_t *) (src) );
+                        x2 = vld1_u8( (uint8_t *) (src + cn) );
+
+                        int16x8_t y0, y1;
+                        y0 = vreinterpretq_s16_u16(vaddl_u8(x1, z));
+                        y1 = vreinterpretq_s16_u16(vaddl_u8(x0, x2));
+                        accl = vmlal_lane_s16(accl, vget_low_s16(y0), k, 0);
+                        accl = vmlal_lane_s16(accl, vget_low_s16(y1), k, 1);
+                        acch = vmlal_lane_s16(acch, vget_high_s16(y0), k, 0);
+                        acch = vmlal_lane_s16(acch, vget_high_s16(y1), k, 1);
+
+                        vst1q_s32((int32_t *)(dst + i), accl);
+                        vst1q_s32((int32_t *)(dst + i + 4), acch);
+
+                        accl = acch = vdupq_n_s32(0);
+                    }
+
+
+                    // __m128i k0 = _mm_shuffle_epi32(_mm_cvtsi32_si128(kx[0]), 0),
+                    // k1 = _mm_shuffle_epi32(_mm_cvtsi32_si128(kx[1]), 0);
+                    // k0 = _mm_packs_epi32(k0, k0);
+                    // k1 = _mm_packs_epi32(k1, k1);
+
+                    // for( ; i <= width - 16; i += 16, src += 16 )
+                    // {
+                    //     __m128i x0, x1, x2, y0, y1, t0, t1, z0, z1, z2, z3;
+                    //     x0 = _mm_loadu_si128((__m128i*)(src - cn));
+                    //     x1 = _mm_loadu_si128((__m128i*)src);
+                    //     x2 = _mm_loadu_si128((__m128i*)(src + cn));
+                    //     y0 = _mm_add_epi16(_mm_unpackhi_epi8(x0, z), _mm_unpackhi_epi8(x2, z));
+                    //     x0 = _mm_add_epi16(_mm_unpacklo_epi8(x0, z), _mm_unpacklo_epi8(x2, z));
+                    //     y1 = _mm_unpackhi_epi8(x1, z);
+                    //     x1 = _mm_unpacklo_epi8(x1, z);
+
+                    //     t1 = _mm_mulhi_epi16(x1, k0);
+                    //     t0 = _mm_mullo_epi16(x1, k0);
+                    //     x2 = _mm_mulhi_epi16(x0, k1);
+                    //     x0 = _mm_mullo_epi16(x0, k1);
+                    //     z0 = _mm_unpacklo_epi16(t0, t1);
+                    //     z1 = _mm_unpackhi_epi16(t0, t1);
+                    //     z0 = _mm_add_epi32(z0, _mm_unpacklo_epi16(x0, x2));
+                    //     z1 = _mm_add_epi32(z1, _mm_unpackhi_epi16(x0, x2));
+
+                    //     t1 = _mm_mulhi_epi16(y1, k0);
+                    //     t0 = _mm_mullo_epi16(y1, k0);
+                    //     y1 = _mm_mulhi_epi16(y0, k1);
+                    //     y0 = _mm_mullo_epi16(y0, k1);
+                    //     z2 = _mm_unpacklo_epi16(t0, t1);
+                    //     z3 = _mm_unpackhi_epi16(t0, t1);
+                    //     z2 = _mm_add_epi32(z2, _mm_unpacklo_epi16(y0, y1));
+                    //     z3 = _mm_add_epi32(z3, _mm_unpackhi_epi16(y0, y1));
+                    //     _mm_store_si128((__m128i*)(dst + i), z0);
+                    //     _mm_store_si128((__m128i*)(dst + i + 4), z1);
+                    //     _mm_store_si128((__m128i*)(dst + i + 8), z2);
+                    //     _mm_store_si128((__m128i*)(dst + i + 12), z3);
+                    // }
                 }
             }
             else if( _ksize == 5 )
