@@ -79,6 +79,8 @@ struct SymmRowSmallVec_8u32s
 
                     for( ; i <= width - 8; i += 8, src += 8 )
                     {
+                        accl = acch = vdupq_n_s32(0);
+
                         uint8x8_t x0, x1, x2;
                         x0 = vld1_u8( (uint8_t *) (src - cn) );
                         x1 = vld1_u8( (uint8_t *) (src) );
@@ -94,8 +96,6 @@ struct SymmRowSmallVec_8u32s
 
                         vst1q_s32((int32_t *)(dst + i), accl);
                         vst1q_s32((int32_t *)(dst + i + 4), acch);
-
-                        accl = acch = vdupq_n_s32(0);
                     }
 
 
