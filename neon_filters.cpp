@@ -160,15 +160,37 @@ struct SymmRowSmallVec_8u32s
                     for( ; i <= width - 8; i += 8, src += 8 )
                     {
                         uint8x8_t x0, x1;
+                        int16x8_t y0;
+
+                        #if defined __GNUC__
+                               asm volatile (
+                            "sub r0, %0, %3\t\n"
+                            "add r1, %0, %3\t\n"
+                            "vld1.8 %P5, [r0]\t\n"
+                            "vld1.8 %P6, [r1]\t\n"
+                            "vaddl.u8 q0, %P6, %P4\t\n"
+                            "vaddl.u8 q1, %P5, %P4\t\n"
+                            "vsub.i16 %q7, q0, q1\t\n"
+                            "add r0, %[dst], %8, LSL #2\t\n"
+                            "add r1, r0, #4*4\t\n"
+                            "vmovl.s16 q3, %e7\t\n"
+                            "vst1.32 {d6, d7}, [r0]\t\n"
+                            "vmovl.s16 q9, %f7\t\n"
+                            "vst1.32 {d18, d19}, [r1]\t\n"
+                            : "=r"(src) /*Outputs*/
+                            : "0"(src), [dst]"r"(dst), "r"(cn), "w"(z), "w"(x0), "w"(x1), "w"(y0), "r"(i) /*Inputs*/
+                            : "r0", "r1", "q0", "q1", "q3", "q9" /*Clobbered*/
+                        );
+                        #else
                         x0 = vld1_u8( (uint8_t *) (src - cn) );
                         x1 = vld1_u8( (uint8_t *) (src + cn) );
 
-                        int16x8_t y0;
                         y0 = vsubq_s16(vreinterpretq_s16_u16(vaddl_u8(x1, z)),
                                 vreinterpretq_s16_u16(vaddl_u8(x0, z)));
 
                         vst1q_s32((int32_t *)(dst + i), vmovl_s16(vget_low_s16(y0)));
                         vst1q_s32((int32_t *)(dst + i + 4), vmovl_s16(vget_high_s16(y0)));
+                        #endif
                     }
                 }
                 else
