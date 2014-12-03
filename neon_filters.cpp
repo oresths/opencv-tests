@@ -79,23 +79,24 @@ struct SymmRowSmallVec_8u32s
 
                     for( ; i <= width - 8; i += 8, src += 8 )
                     {
-                        accl = acch = vdupq_n_s32(0);
-
                         uint8x8_t x0, x1, x2;
                         x0 = vld1_u8( (uint8_t *) (src - cn) );
                         x1 = vld1_u8( (uint8_t *) (src) );
                         x2 = vld1_u8( (uint8_t *) (src + cn) );
 
                         int16x8_t y0, y1;
+                        int32x4_t y3, y4, y5, y6, y7, y8;
                         y0 = vreinterpretq_s16_u16(vaddl_u8(x1, z));
                         y1 = vreinterpretq_s16_u16(vaddl_u8(x0, x2));
-                        accl = vmlal_lane_s16(accl, vget_low_s16(y0), k, 0);
-                        accl = vmlal_lane_s16(accl, vget_low_s16(y1), k, 1);
-                        acch = vmlal_lane_s16(acch, vget_high_s16(y0), k, 0);
-                        acch = vmlal_lane_s16(acch, vget_high_s16(y1), k, 1);
+                        y3 = vmull_lane_s16(vget_low_s16(y0), k, 0);
+                        y4 = vmull_lane_s16(vget_low_s16(y1), k, 1);
+                        y5 = vmull_lane_s16(vget_high_s16(y0), k, 0);
+                        y6 = vmull_lane_s16(vget_high_s16(y1), k, 1);
+                        y7 = vaddq_s32(y3, y4);
+                        y8 = vaddq_s32(y5, y6);
 
-                        vst1q_s32((int32_t *)(dst + i), accl);
-                        vst1q_s32((int32_t *)(dst + i + 4), acch);
+                        vst1q_s32((int32_t *)(dst + i), y7);
+                        vst1q_s32((int32_t *)(dst + i + 4), y8);
                     }
 
 
