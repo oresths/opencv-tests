@@ -150,7 +150,7 @@ struct SymmRowSmallVec_8u32s
                         int16x8_t y0, y1;
                         int32x4_t y2, y3, y4, y5, y6, y7;
                         y0 = vreinterpretq_s16_u16(vaddl_u8(x1, z));
-                        y1 = vsub_s16(vreinterpretq_s16_u16(vaddl_u8(x2, z)),
+                        y1 = vsubq_s16(vreinterpretq_s16_u16(vaddl_u8(x2, z)),
                             vreinterpretq_s16_u16(vaddl_u8(x0, z)));
                         y2 = vmull_lane_s16(vget_low_s16(y0), k, 0);
                         y3 = vmull_lane_s16(vget_low_s16(y1), k, 1);
@@ -232,7 +232,24 @@ struct SymmColumnSmallVec_32s16s
             }
             else
             {
-                return 0;
+                __m128 k0 = _mm_set1_ps(ky[0]), k1 = _mm_set1_ps(ky[1]);
+                for( ; i <= width - 8; i += 8 )
+                {
+                    __m128 s0, s1;
+                    s0 = _mm_cvtepi32_ps(_mm_load_si128((__m128i*)(S1 + i)));
+                    s1 = _mm_cvtepi32_ps(_mm_load_si128((__m128i*)(S1 + i + 4)));
+                    s0 = _mm_add_ps(_mm_mul_ps(s0, k0), df4);
+                    s1 = _mm_add_ps(_mm_mul_ps(s1, k0), df4);
+                    __m128i x0, x1;
+                    x0 = _mm_add_epi32(_mm_load_si128((__m128i*)(S0 + i)),
+                                       _mm_load_si128((__m128i*)(S2 + i)));
+                    x1 = _mm_add_epi32(_mm_load_si128((__m128i*)(S0 + i + 4)),
+                                       _mm_load_si128((__m128i*)(S2 + i + 4)));
+                    s0 = _mm_add_ps(s0, _mm_mul_ps(_mm_cvtepi32_ps(x0),k1));
+                    s1 = _mm_add_ps(s1, _mm_mul_ps(_mm_cvtepi32_ps(x1),k1));
+                    x0 = _mm_packs_epi32(_mm_cvtps_epi32(s0), _mm_cvtps_epi32(s1));
+                    _mm_storeu_si128((__m128i*)(dst + i), x0);
+                }
             }
         }
         else
@@ -255,7 +272,20 @@ struct SymmColumnSmallVec_32s16s
             }
             else
             {
-                return 0;
+                __m128 k1 = _mm_set1_ps(ky[1]);
+                for( ; i <= width - 8; i += 8 )
+                {
+                    __m128 s0 = df4, s1 = df4;
+                    __m128i x0, x1;
+                    x0 = _mm_sub_epi32(_mm_load_si128((__m128i*)(S0 + i)),
+                                       _mm_load_si128((__m128i*)(S2 + i)));
+                    x1 = _mm_sub_epi32(_mm_load_si128((__m128i*)(S0 + i + 4)),
+                                       _mm_load_si128((__m128i*)(S2 + i + 4)));
+                    s0 = _mm_add_ps(s0, _mm_mul_ps(_mm_cvtepi32_ps(x0),k1));
+                    s1 = _mm_add_ps(s1, _mm_mul_ps(_mm_cvtepi32_ps(x1),k1));
+                    x0 = _mm_packs_epi32(_mm_cvtps_epi32(s0), _mm_cvtps_epi32(s1));
+                    _mm_storeu_si128((__m128i*)(dst + i), x0);
+                }
             }
         }
 
