@@ -75,77 +75,27 @@ struct SymmRowSmallVec_8u32s
 
                     uint8x8_t z = vdup_n_u8(0);
 
-                    // int32x4_t accl = vdupq_n_s32(0), acch = vdupq_n_s32(0);
-                    int32x4_t acc0, acc1, acc2, acc3;
-
-                    for( ; i <= width - 16; i += 16, src += 16 )
+                    for( ; i <= width - 8; i += 8, src += 8 )
                     {
-                        acc0 = acc1 = acc2 = acc3 = vdupq_n_s32(0);
+                        uint8x8_t x0, x1, x2;
+                        x0 = vld1_u8( (uint8_t *) (src - cn) );
+                        x1 = vld1_u8( (uint8_t *) (src) );
+                        x2 = vld1_u8( (uint8_t *) (src + cn) );
 
-                        uint8x16_t x0, x1, x2;
-                        x0 = vld1q_u8( (uint8_t *) (src - cn) );
-                        x1 = vld1q_u8( (uint8_t *) (src) );
-                        x2 = vld1q_u8( (uint8_t *) (src + cn) );
+                        int16x8_t y0, y1;
+                        int32x4_t y2, y3, y4, y5, y6, y7;
+                        y0 = vreinterpretq_s16_u16(vaddl_u8(x1, z));
+                        y1 = vreinterpretq_s16_u16(vaddl_u8(x0, x2));
+                        y2 = vmull_lane_s16(vget_low_s16(y0), k, 0);
+                        y3 = vmull_lane_s16(vget_low_s16(y1), k, 1);
+                        y4 = vmull_lane_s16(vget_high_s16(y0), k, 0);
+                        y5 = vmull_lane_s16(vget_high_s16(y1), k, 1);
+                        y6 = vaddq_s32(y2, y3);
+                        y7 = vaddq_s32(y4, y5);
 
-                        int16x8_t y0, y1, y2, y3;
-                        y0 = vreinterpretq_s16_u16(vaddl_u8(vget_low_u8(x1), z));
-                        y1 = vreinterpretq_s16_u16(vaddl_u8(vget_low_u8(x0), vget_low_u8(x2)));
-                        y2 = vreinterpretq_s16_u16(vaddl_u8(vget_high_u8(x1), z));
-                        y3 = vreinterpretq_s16_u16(vaddl_u8(vget_high_u8(x0), vget_high_u8(x2)));
-                        acc0 = vmlal_lane_s16(acc0, vget_low_s16(y0), k, 0);
-                        acc0 = vmlal_lane_s16(acc0, vget_low_s16(y1), k, 1);
-                        acc1 = vmlal_lane_s16(acc1, vget_high_s16(y0), k, 0);
-                        acc1 = vmlal_lane_s16(acc1, vget_high_s16(y1), k, 1);
-                        acc2 = vmlal_lane_s16(acc2, vget_low_s16(y2), k, 0);
-                        acc2 = vmlal_lane_s16(acc2, vget_low_s16(y3), k, 1);
-                        acc3 = vmlal_lane_s16(acc3, vget_high_s16(y2), k, 0);
-                        acc3 = vmlal_lane_s16(acc3, vget_high_s16(y3), k, 1);
-
-                        vst1q_s32((int32_t *)(dst + i), acc0);
-                        vst1q_s32((int32_t *)(dst + i + 4), acc1);
-                        vst1q_s32((int32_t *)(dst + i + 8), acc2);
-                        vst1q_s32((int32_t *)(dst + i + 12), acc3);
+                        vst1q_s32((int32_t *)(dst + i), y6);
+                        vst1q_s32((int32_t *)(dst + i + 4), y7);
                     }
-
-
-                    // __m128i k0 = _mm_shuffle_epi32(_mm_cvtsi32_si128(kx[0]), 0),
-                    // k1 = _mm_shuffle_epi32(_mm_cvtsi32_si128(kx[1]), 0);
-                    // k0 = _mm_packs_epi32(k0, k0);
-                    // k1 = _mm_packs_epi32(k1, k1);
-
-                    // for( ; i <= width - 16; i += 16, src += 16 )
-                    // {
-                    //     __m128i x0, x1, x2, y0, y1, t0, t1, z0, z1, z2, z3;
-                    //     x0 = _mm_loadu_si128((__m128i*)(src - cn));
-                    //     x1 = _mm_loadu_si128((__m128i*)src);
-                    //     x2 = _mm_loadu_si128((__m128i*)(src + cn));
-                    //     y0 = _mm_add_epi16(_mm_unpackhi_epi8(x0, z), _mm_unpackhi_epi8(x2, z));
-                    //     x0 = _mm_add_epi16(_mm_unpacklo_epi8(x0, z), _mm_unpacklo_epi8(x2, z));
-                    //     y1 = _mm_unpackhi_epi8(x1, z);
-                    //     x1 = _mm_unpacklo_epi8(x1, z);
-
-                    //     t1 = _mm_mulhi_epi16(x1, k0);
-                    //     t0 = _mm_mullo_epi16(x1, k0);
-                    //     x2 = _mm_mulhi_epi16(x0, k1);
-                    //     x0 = _mm_mullo_epi16(x0, k1);
-                    //     z0 = _mm_unpacklo_epi16(t0, t1);
-                    //     z1 = _mm_unpackhi_epi16(t0, t1);
-                    //     z0 = _mm_add_epi32(z0, _mm_unpacklo_epi16(x0, x2));
-                    //     z1 = _mm_add_epi32(z1, _mm_unpackhi_epi16(x0, x2));
-
-                    //     t1 = _mm_mulhi_epi16(y1, k0);
-                    //     t0 = _mm_mullo_epi16(y1, k0);
-                    //     y1 = _mm_mulhi_epi16(y0, k1);
-                    //     y0 = _mm_mullo_epi16(y0, k1);
-                    //     z2 = _mm_unpacklo_epi16(t0, t1);
-                    //     z3 = _mm_unpackhi_epi16(t0, t1);
-                    //     z2 = _mm_add_epi32(z2, _mm_unpacklo_epi16(y0, y1));
-                    //     z3 = _mm_add_epi32(z3, _mm_unpackhi_epi16(y0, y1));
-                    //     _mm_store_si128((__m128i*)(dst + i), z0);
-                    //     _mm_store_si128((__m128i*)(dst + i + 4), z1);
-                    //     _mm_store_si128((__m128i*)(dst + i + 8), z2);
-                    //     _mm_store_si128((__m128i*)(dst + i + 12), z3);
-                    // }
                 }
             }
             else if( _ksize == 5 )
@@ -190,27 +140,6 @@ struct SymmRowSmallVec_8u32s
                 return 0;
             }
         }
-
-        // src -= (_ksize/2)*cn;
-        // kx -= _ksize/2;
-        // for( ; i <= width - 4; i += 4, src += 4 )
-        // {
-        //     __m128i f, s0 = z, x0, x1;
-
-        //     for( k = j = 0; k < _ksize; k++, j += cn )
-        //     {
-        //         f = _mm_cvtsi32_si128(kx[k]);
-        //         f = _mm_shuffle_epi32(f, 0);
-        //         f = _mm_packs_epi32(f, f);
-
-        //         x0 = _mm_cvtsi32_si128(*(const int*)(src + j));
-        //         x0 = _mm_unpacklo_epi8(x0, z);
-        //         x1 = _mm_mulhi_epi16(x0, f);
-        //         x0 = _mm_mullo_epi16(x0, f);
-        //         s0 = _mm_add_epi32(s0, _mm_unpacklo_epi16(x0, x1));
-        //     }
-        //     _mm_store_si128((__m128i*)(dst + i), s0);
-        // }
 
         return i;
     }
