@@ -228,7 +228,6 @@ struct SymmColumnSmallVec_32s16s
             }
             else if( ky[0] == 10 && ky[1] == 3 )
             {
-
                 for( ; i <= width - 4; i += 4 )
                 {
                     int32x4_t x0, x1, x2, x3;
@@ -252,6 +251,10 @@ struct SymmColumnSmallVec_32s16s
             }
             else
             {
+                float32x2_t k32 = vdup_n_f32(0);
+                k32 = vld1_lane_f32(ky, k32, 0);
+                k32 = vld1_lane_f32(ky + 1, k32, 1);
+
                 for( ; i <= width - 4; i += 4 )
                 {
                     int32x4_t x0, x1, x2, x3, x4;
@@ -264,8 +267,8 @@ struct SymmColumnSmallVec_32s16s
                     float32x4_t s0, s1, s2, s3, s4, s5;
                     s0 = vcvtq_f32_s32(x1);
                     s1 = vcvtq_f32_s32(x3);
-                    s2 = vmulq_n_f32(s0, ky[0]);
-                    s3 = vmulq_n_f32(s1, ky[1]);
+                    s2 = vmulq_lane_f32(s0, k32, 0);
+                    s3 = vmulq_lane_f32(s1, k32, 1);
                     s4 = vaddq_f32(s2, s3);
                     s5 = vaddq_f32(s4, df4);
 
