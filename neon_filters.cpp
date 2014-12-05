@@ -212,18 +212,21 @@ struct SymmColumnSmallVec_32s16s
             {
                 for( ; i <= width - 8; i += 8 )
                 {
-                    __m128i s0, s1, s2, s3, s4, s5;
-                    s0 = _mm_load_si128((__m128i*)(S0 + i));
-                    s1 = _mm_load_si128((__m128i*)(S0 + i + 4));
-                    s2 = _mm_load_si128((__m128i*)(S1 + i));
-                    s3 = _mm_load_si128((__m128i*)(S1 + i + 4));
-                    s4 = _mm_load_si128((__m128i*)(S2 + i));
-                    s5 = _mm_load_si128((__m128i*)(S2 + i + 4));
-                    s0 = _mm_add_epi32(s0, _mm_add_epi32(s4, _mm_add_epi32(s2, s2)));
-                    s1 = _mm_add_epi32(s1, _mm_add_epi32(s5, _mm_add_epi32(s3, s3)));
-                    s0 = _mm_add_epi32(s0, d4);
-                    s1 = _mm_add_epi32(s1, d4);
-                    _mm_storeu_si128((__m128i*)(dst + i), _mm_packs_epi32(s0, s1));
+                    int32x4_t x0, x1, x2, x3;
+                    x0 = vld1q_s32((int32_t const *)(S0 + i));
+                    x1 = vld1q_s32((int32_t const *)(S1 + i));
+                    x2 = vld1q_s32((int32_t const *)(S2 + i));
+
+                    int32x4_t y0, y1, y2, y3;
+                    y0 = vaddq_s32(x0, x2);
+                    y1 = vqshlq_n_s32(x1, 2);
+                    y2 = vaddq_s32(y0, y1);
+                    y3 = vaddq_s32(y2, d4);
+
+                    int16x4_t t;
+                    t = vqmovn_s32(y3);
+
+                    vst1_s16((int16_t *)(dst + i), t);
                 }
             }
             else if( ky[0] == -2 && ky[1] == 1 )
@@ -243,7 +246,7 @@ struct SymmColumnSmallVec_32s16s
                     x3 = vaddq_s32(x0, x2);
 
                     int32x4_t y0, y1, y2, y3;
-                    y0 = vmulq_n_s32(x1, 10;
+                    y0 = vmulq_n_s32(x1, 10);
                     y1 = vmulq_n_s32(x3, 3);
                     y2 = vaddq_s32(y0, y1);
                     y3 = vaddq_s32(y2, d4);
