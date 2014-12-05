@@ -305,17 +305,20 @@ struct SymmColumnSmallVec_32s16s
             }
             else
             {
+                float32x2_t k32 = vdup_n_f32(0);
+                k32 = vld1_lane_f32(ky + 1, k32, 1);
+
                 for( ; i <= width - 4; i += 4 )
                 {
                     int32x4_t x0, x1, x2, x3;
                     x0 = vld1q_s32((int32_t const *)(S0 + i));
                     x1 = vld1q_s32((int32_t const *)(S2 + i));
 
-                    x2 = vsubq_s32(x1, x0);
+                    x2 = vsubq_s32(x0, x1);
 
                     float32x4_t s0, s1, s2;
                     s0 = vcvtq_f32_s32(x2);
-                    s1 = vmulq_n_f32(s0, ky[1]);
+                    s1 = vmulq_lane_f32(s0, k32, 1);
                     s2 = vaddq_f32(s1, df4);
 
                     x3 = vcvtq_s32_f32(s2);
