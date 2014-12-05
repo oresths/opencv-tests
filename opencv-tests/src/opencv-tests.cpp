@@ -38,8 +38,8 @@ int main()
 
     double exec_time = (double)getTickCount();
 
-//    Sobel(grey, sobelx, CV_16S, 1, 0, -1);//x Scharr
-    Sobel(grey, sobelx, CV_16S, 0, 1, -1);//y Scharr kernel_row=[3, 10, 3]
+    Sobel(grey, sobelx, CV_16S, 1, 0, -1);//x Scharr
+//    Sobel(grey, sobelx, CV_16S, 0, 1, -1);//y Scharr kernel_row=[3, 10, 3]
 //    sepFilter2D(grey, sobelx, CV_16S, kx, ky, Point(-1, -1), 0, BORDER_DEFAULT);
 
     exec_time = ((double)getTickCount() - exec_time)*1000./getTickFrequency();

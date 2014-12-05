@@ -203,8 +203,8 @@ struct SymmColumnSmallVec_32s16s
         const int** src = (const int**)_src;
         const int *S0 = src[-1], *S1 = src[0], *S2 = src[1];
         short* dst = (short*)_dst;
-        __m128 df4 = _mm_set1_ps(delta);
-        __m128i d4 = _mm_cvtps_epi32(df4);
+        float32x4_t df4 = vdupq_n_f32(delta);
+        // __m128i d4 = _mm_cvtps_epi32(df4);
 
         if( symmetrical )
         {
@@ -232,6 +232,32 @@ struct SymmColumnSmallVec_32s16s
             }
             else
             {
+
+                for( ; i <= width - 4; i += 4 )
+                {
+                    int32x4_t x0, x1, x2, x3, x4;
+                    x0 = vld1q_s32((int32_t const *)(S0 + i));
+                    x1 = vld1q_s32((int32_t const *)(S1 + i));
+                    x2 = vld1q_s32((int32_t const *)(S2 + i));
+
+                    x3 = vaddq_s32(x0, x2);
+
+                    float32x4_t s0, s1, s2, s3, s4, s5;
+                    s0 = vcvtq_f32_s32(x1);
+                    s1 = vcvtq_f32_s32(x3);
+                    s2 = vmulq_n_f32(s0, (ky[0]));
+                    s3 = vmulq_n_f32(s1, (ky[1]));
+                    s4 = vaddq_f32(s2, s3);
+                    s5 = vaddq_f32(s4, df4);
+
+                    x4 = vcvtq_s32_f32(s5);
+
+                    int16x4_t x5;
+                    x5 = vqmovn_s32(x4);
+
+                    vst1_s16((int16_t *)(dst + i), x5);
+                }
+
                 __m128 k0 = _mm_set1_ps(ky[0]), k1 = _mm_set1_ps(ky[1]);
                 for( ; i <= width - 8; i += 8 )
                 {
@@ -296,8 +322,6 @@ struct SymmColumnSmallVec_32s16s
     float delta;
     Mat kernel;
 };
-
-
 
 
 typedef RowNoVec RowVec_8u32s;
