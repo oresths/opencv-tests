@@ -185,7 +185,7 @@ struct SymmColumnSmallVec_32s16s
     SymmColumnSmallVec_32s16s(const Mat& _kernel, int _symmetryType, int _bits, double _delta)
     {
         symmetryType = _symmetryType;
-        _kernel.convertTo(kernel, CV_32F, 1./(1 << _bits), 0);
+        _kernel.convertTo(kernel, CV_32S, 1 / (1 << _bits), 0);
         delta = (float)(_delta/(1 << _bits));
         CV_Assert( (symmetryType & (KERNEL_SYMMETRICAL | KERNEL_ASYMMETRICAL)) != 0 );
     }
@@ -203,8 +203,8 @@ struct SymmColumnSmallVec_32s16s
         const int** src = (const int**)_src;
         const int *S0 = src[-1], *S1 = src[0], *S2 = src[1];
         short* dst = (short*)_dst;
-        float32x4_t df4 = vdupq_n_f32(delta);
-        // __m128i d4 = _mm_cvtps_epi32(df4);
+        // float32x4_t df4 = vdupq_n_f32(delta);
+        int32x4_t d4 = vcvtq_s32_f32(vdupq_n_f32(delta));
 
         if( symmetrical )
         {
@@ -235,27 +235,22 @@ struct SymmColumnSmallVec_32s16s
 
                 for( ; i <= width - 4; i += 4 )
                 {
-                    int32x4_t x0, x1, x2, x3, x4;
+                    int32x4_t x0, x1, x2;
                     x0 = vld1q_s32((int32_t const *)(S0 + i));
                     x1 = vld1q_s32((int32_t const *)(S1 + i));
                     x2 = vld1q_s32((int32_t const *)(S2 + i));
 
-                    x3 = vaddq_s32(x0, x2);
+                    int32x4_t y0, y1, y2, y3, y4;
+                    y0 = vaddq_s32(x0, x2);
+                    y1 = vmulq_n_s32(x1, (ky[0]));
+                    y2 = vmulq_n_s32(y0, (ky[1]));
+                    y3 = vaddq_s32(y1, y2);
+                    y4 = vaddq_s32(y3, d4);
 
-                    float32x4_t s0, s1, s2, s3, s4, s5;
-                    s0 = vcvtq_f32_s32(x1);
-                    s1 = vcvtq_f32_s32(x3);
-                    s2 = vmulq_n_f32(s0, (ky[0]));
-                    s3 = vmulq_n_f32(s1, (ky[1]));
-                    s4 = vaddq_f32(s2, s3);
-                    s5 = vaddq_f32(s4, df4);
+                    int16x4_t y5;
+                    y5 = vqmovn_s32(y4);
 
-                    x4 = vcvtq_s32_f32(s5);
-
-                    int16x4_t x5;
-                    x5 = vqmovn_s32(x4);
-
-                    vst1_s16((int16_t *)(dst + i), x5);
+                    vst1_s16((int16_t *)(dst + i), y5);
                 }
 
                 __m128 k0 = _mm_set1_ps(ky[0]), k1 = _mm_set1_ps(ky[1]);
