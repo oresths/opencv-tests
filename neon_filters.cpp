@@ -292,7 +292,7 @@ struct SymmColumnSmallVec_32s16s
 
                     int32x4_t y0, y1;
                     y0 = vsubq_s32(x1, x0);
-                    y1 = vaddq_s32(y0, d4);
+                    y1 = vqaddq_s32(y0, d4);
 
                     int16x4_t t;
                     t = vqmovn_s32(y1);
@@ -302,19 +302,25 @@ struct SymmColumnSmallVec_32s16s
             }
             else
             {
-                __m128 k1 = _mm_set1_ps(ky[1]);
-                for( ; i <= width - 8; i += 8 )
+                for( ; i <= width - 4; i += 4 )
                 {
-                    __m128 s0 = df4, s1 = df4;
-                    __m128i x0, x1;
-                    x0 = _mm_sub_epi32(_mm_load_si128((__m128i*)(S0 + i)),
-                                       _mm_load_si128((__m128i*)(S2 + i)));
-                    x1 = _mm_sub_epi32(_mm_load_si128((__m128i*)(S0 + i + 4)),
-                                       _mm_load_si128((__m128i*)(S2 + i + 4)));
-                    s0 = _mm_add_ps(s0, _mm_mul_ps(_mm_cvtepi32_ps(x0),k1));
-                    s1 = _mm_add_ps(s1, _mm_mul_ps(_mm_cvtepi32_ps(x1),k1));
-                    x0 = _mm_packs_epi32(_mm_cvtps_epi32(s0), _mm_cvtps_epi32(s1));
-                    _mm_storeu_si128((__m128i*)(dst + i), x0);
+                    int32x4_t x0, x1, x2, x3;
+                    x0 = vld1q_s32((int32_t const *)(S0 + i));
+                    x1 = vld1q_s32((int32_t const *)(S2 + i));
+
+                    x2 = vsubq_s32(x1, x0);
+
+                    float32x4_t s0, s1, s2;
+                    s0 = vcvtq_f32_s32(x2);
+                    s1 = vmulq_n_f32(s0, ky[1]);
+                    s2 = vaddq_f32(s1, df4);
+
+                    x3 = vcvtq_s32_f32(s2);
+
+                    int16x4_t x4;
+                    x4 = vqmovn_s32(x3);
+
+                    vst1_s16((int16_t *)(dst + i), x4);
                 }
             }
         }
@@ -331,12 +337,10 @@ struct SymmColumnSmallVec_32s16s
 typedef RowNoVec RowVec_8u32s;
 typedef RowNoVec RowVec_16s32f;
 typedef RowNoVec RowVec_32f;
-//typedef SymmRowSmallNoVec SymmRowSmallVec_8u32s;
 typedef SymmRowSmallNoVec SymmRowSmallVec_32f;
 typedef ColumnNoVec SymmColumnVec_32s8u;
 typedef ColumnNoVec SymmColumnVec_32f16s;
 typedef ColumnNoVec SymmColumnVec_32f;
-// typedef SymmColumnSmallNoVec SymmColumnSmallVec_32s16s;
 typedef SymmColumnSmallNoVec SymmColumnSmallVec_32f;
 typedef FilterNoVec FilterVec_8u;
 typedef FilterNoVec FilterVec_8u16s;
