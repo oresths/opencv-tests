@@ -210,9 +210,9 @@ struct SymmColumnSmallVec_32s16s
         {
             if( ky[0] == 2 && ky[1] == 1 )
             {
-                for( ; i <= width - 8; i += 8 )
+                for( ; i <= width - 4; i += 4 )
                 {
-                    int32x4_t x0, x1, x2, x3;
+                    int32x4_t x0, x1, x2;
                     x0 = vld1q_s32((int32_t const *)(S0 + i));
                     x1 = vld1q_s32((int32_t const *)(S1 + i));
                     x2 = vld1q_s32((int32_t const *)(S2 + i));
@@ -291,16 +291,20 @@ struct SymmColumnSmallVec_32s16s
             {
                 if( ky[1] < 0 )
                     std::swap(S0, S2);
-                for( ; i <= width - 8; i += 8 )
+                for( ; i <= width - 4; i += 4 )
                 {
-                    __m128i s0, s1, s2, s3;
-                    s0 = _mm_load_si128((__m128i*)(S2 + i));
-                    s1 = _mm_load_si128((__m128i*)(S2 + i + 4));
-                    s2 = _mm_load_si128((__m128i*)(S0 + i));
-                    s3 = _mm_load_si128((__m128i*)(S0 + i + 4));
-                    s0 = _mm_add_epi32(_mm_sub_epi32(s0, s2), d4);
-                    s1 = _mm_add_epi32(_mm_sub_epi32(s1, s3), d4);
-                    _mm_storeu_si128((__m128i*)(dst + i), _mm_packs_epi32(s0, s1));
+                    int32x4_t x0, x1, x2;
+                    x0 = vld1q_s32((int32_t const *)(S0 + i));
+                    x1 = vld1q_s32((int32_t const *)(S2 + i));
+
+                    int32x4_t y0, y1, y2, y3;
+                    y0 = vsubq_s32(x1, x0);
+                    y1 = vaddq_s32(y0, d4);
+
+                    int16x4_t t;
+                    t = vqmovn_s32(y1);
+
+                    vst1_s16((int16_t *)(dst + i), t);
                 }
             }
             else
