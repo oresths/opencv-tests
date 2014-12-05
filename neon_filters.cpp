@@ -133,7 +133,6 @@ struct SymmRowSmallVec_8u32s
                 else
                 {
                     int32x4_t k32 = vdupq_n_s32(0);
-                    k32 = vld1q_lane_s32(kx, k32, 0);
                     k32 = vld1q_lane_s32(kx + 1, k32, 1);
 
                     int16x4_t k = vqmovn_s32(k32);
@@ -142,25 +141,19 @@ struct SymmRowSmallVec_8u32s
 
                     for( ; i <= width - 8; i += 8, src += 8 )
                     {
-                        uint8x8_t x0, x1, x2;
+                        uint8x8_t x0, x1;
                         x0 = vld1_u8( (uint8_t *) (src - cn) );
-                        x1 = vld1_u8( (uint8_t *) (src) );
-                        x2 = vld1_u8( (uint8_t *) (src + cn) );
+                        x1 = vld1_u8( (uint8_t *) (src + cn) );
 
-                        int16x8_t y0, y1;
-                        int32x4_t y2, y3, y4, y5, y6, y7;
-                        y0 = vreinterpretq_s16_u16(vaddl_u8(x1, z));
-                        y1 = vsubq_s16(vreinterpretq_s16_u16(vaddl_u8(x2, z)),
+                        int16x8_t y0;
+                        int32x4_t y1, y2;
+                        y0 = vsubq_s16(vreinterpretq_s16_u16(vaddl_u8(x1, z)),
                             vreinterpretq_s16_u16(vaddl_u8(x0, z)));
-                        y2 = vmull_lane_s16(vget_low_s16(y0), k, 0);
-                        y3 = vmull_lane_s16(vget_low_s16(y1), k, 1);
-                        y4 = vmull_lane_s16(vget_high_s16(y0), k, 0);
-                        y5 = vmull_lane_s16(vget_high_s16(y1), k, 1);
-                        y6 = vaddq_s32(y2, y3);
-                        y7 = vaddq_s32(y4, y5);
+                        y1 = vmull_lane_s16(vget_low_s16(y0), k, 1);
+                        y2 = vmull_lane_s16(vget_high_s16(y0), k, 1);
 
-                        vst1q_s32((int32_t *)(dst + i), y6);
-                        vst1q_s32((int32_t *)(dst + i + 4), y7);
+                        vst1q_s32((int32_t *)(dst + i), y1);
+                        vst1q_s32((int32_t *)(dst + i + 4), y2);
                     }
                 }
             }
@@ -293,11 +286,11 @@ struct SymmColumnSmallVec_32s16s
                     std::swap(S0, S2);
                 for( ; i <= width - 4; i += 4 )
                 {
-                    int32x4_t x0, x1, x2;
+                    int32x4_t x0, x1;
                     x0 = vld1q_s32((int32_t const *)(S0 + i));
                     x1 = vld1q_s32((int32_t const *)(S2 + i));
 
-                    int32x4_t y0, y1, y2, y3;
+                    int32x4_t y0, y1;
                     y0 = vsubq_s32(x1, x0);
                     y1 = vaddq_s32(y0, d4);
 
