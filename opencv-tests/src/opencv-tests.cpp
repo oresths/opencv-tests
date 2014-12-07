@@ -20,8 +20,9 @@ using namespace std;
 int main()
 {
 //	unsigned char m[5][5] = {{1,2,3,4,5}, {6,7,8,9,10}, {11,12,13,14,15}, {16,17,18,19,20}, {21,22,23,24,25}};
-	Mat kx = (Mat_<signed char>(1,3) << -2, 0, 2);
-	Mat ky = (Mat_<unsigned char>(1,3) << 1, 2, 1);
+//	Mat ky = (Mat_<signed char>(1,3) << -2, 0, 2);
+	Mat ky = (Mat_<float>(1,3) << -1, 0, 1);
+	Mat kx = (Mat_<unsigned char>(1,3) << 3, 10, 3);
 //
 //	Mat dst;
 //
@@ -36,11 +37,22 @@ int main()
 
     Mat sobelx;
 
+//    Size ksize; ksize.width=3, ksize.height = 3;
+//    GaussianBlur(grey, sobelx, ksize, 1, 0, BORDER_DEFAULT);
+//    getGaussianKernel()
+
+    Mat fgrey;
+
     double exec_time = (double)getTickCount();
 
+    ksize.width=5, ksize.height = 5;
+//    GaussianBlur(grey, fgrey, ksize, 1, 0, BORDER_DEFAULT);
+//    bilateralFilter(grey, fgrey, 5, 50, 50, BORDER_DEFAULT);
+
 //    Sobel(grey, sobelx, CV_16S, 1, 0, -1);//x Scharr
-    Sobel(grey, sobelx, CV_16S, 0, 1, -1);//y Scharr kernel_row=[3, 10, 3]
-//    sepFilter2D(grey, sobelx, CV_16S, kx, ky, Point(-1, -1), 0, BORDER_DEFAULT);
+//    Sobel(grey, sobelx, CV_16S, 0, 1, -1);//y Scharr kernel_row=[3, 10, 3]
+//    sepFilter2D(fgrey, sobelx, CV_16S, kx, ky, Point(-1, -1), 0, BORDER_DEFAULT);
+    Canny(grey, sobelx, 10, 30);
 
     exec_time = ((double)getTickCount() - exec_time)*1000./getTickFrequency();
 	cout << "exec_time = " << exec_time << " ms";
