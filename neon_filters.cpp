@@ -434,10 +434,123 @@ struct SymmColumnSmallVec_32s16s
 };
 
 
+struct SymmRowSmallVec_32f
+{
+    SymmRowSmallVec_32f() {}
+    SymmRowSmallVec_32f( const Mat& _kernel, int _symmetryType )
+    {
+        kernel = _kernel;
+        symmetryType = _symmetryType;
+    }
+
+    int operator()(const uchar* _src, uchar* _dst, int width, int cn) const
+    {
+        if( !checkHardwareSupport(CV_CPU_SSE) )
+            return 0;
+
+        int i = 0, _ksize = kernel.rows + kernel.cols - 1;
+        float* dst = (float*)_dst;
+        const float* src = (const float*)_src + (_ksize/2)*cn;
+        bool symmetrical = (symmetryType & KERNEL_SYMMETRICAL) != 0;
+        const float* kx = kernel.ptr<float>() + _ksize/2;
+        width *= cn;
+
+        if( symmetrical )
+        {
+            if( _ksize == 1 )
+                return 0;
+            if( _ksize == 3 )
+            {
+                if( kx[0] == 2 && kx[1] == 1 )
+                    return 0;
+                else if( kx[0] == -2 && kx[1] == 1 )
+                    return 0;
+                else
+                {
+                    return 0;
+                }
+            }
+            else if( _ksize == 5 )
+            {
+                if( kx[0] == -2 && kx[1] == 0 && kx[2] == 1 )
+                    return 0;
+                else
+                {
+                    __m128 k0 = _mm_set1_ps(kx[0]), k1 = _mm_set1_ps(kx[1]), k2 = _mm_set1_ps(kx[2]);
+                    for( ; i <= width - 8; i += 8, src += 8 )
+                    {
+                        __m128 x0, x1, x2, y0, y1, y2;
+                        x0 = _mm_loadu_ps(src - cn);
+                        x1 = _mm_loadu_ps(src);
+                        x2 = _mm_loadu_ps(src + cn);
+                        y0 = _mm_loadu_ps(src - cn + 4);
+                        y1 = _mm_loadu_ps(src + 4);
+                        y2 = _mm_loadu_ps(src + cn + 4);
+
+                        x0 = _mm_mul_ps(_mm_add_ps(x0, x2), k1);
+                        y0 = _mm_mul_ps(_mm_add_ps(y0, y2), k1);
+                        x0 = _mm_add_ps(x0, _mm_mul_ps(x1, k0));
+                        y0 = _mm_add_ps(y0, _mm_mul_ps(y1, k0));
+
+                        x2 = _mm_add_ps(_mm_loadu_ps(src + cn*2), _mm_loadu_ps(src - cn*2));
+                        y2 = _mm_add_ps(_mm_loadu_ps(src + cn*2 + 4), _mm_loadu_ps(src - cn*2 + 4));
+                        x0 = _mm_add_ps(x0, _mm_mul_ps(x2, k2));
+                        y0 = _mm_add_ps(y0, _mm_mul_ps(y2, k2));
+
+                        _mm_store_ps(dst + i, x0);
+                        _mm_store_ps(dst + i + 4, y0);
+                    }
+                }
+            }
+        }
+        else
+        {
+            if( _ksize == 3 )
+            {
+                if( kx[0] == 0 && kx[1] == 1 )
+                    return 0;
+                else
+                {
+                    return 0;
+                }
+            }
+            else if( _ksize == 5 )
+            {
+                __m128 k1 = _mm_set1_ps(kx[1]), k2 = _mm_set1_ps(kx[2]);
+                for( ; i <= width - 8; i += 8, src += 8 )
+                {
+                    __m128 x0, x2, y0, y2;
+                    x0 = _mm_loadu_ps(src + cn);
+                    x2 = _mm_loadu_ps(src - cn);
+                    y0 = _mm_loadu_ps(src + cn + 4);
+                    y2 = _mm_loadu_ps(src - cn + 4);
+
+                    x0 = _mm_mul_ps(_mm_sub_ps(x0, x2), k1);
+                    y0 = _mm_mul_ps(_mm_sub_ps(y0, y2), k1);
+
+                    x2 = _mm_sub_ps(_mm_loadu_ps(src + cn*2), _mm_loadu_ps(src - cn*2));
+                    y2 = _mm_sub_ps(_mm_loadu_ps(src + cn*2 + 4), _mm_loadu_ps(src - cn*2 + 4));
+                    x0 = _mm_add_ps(x0, _mm_mul_ps(x2, k2));
+                    y0 = _mm_add_ps(y0, _mm_mul_ps(y2, k2));
+
+                    _mm_store_ps(dst + i, x0);
+                    _mm_store_ps(dst + i + 4, y0);
+                }
+            }
+        }
+
+        return i;
+    }
+
+    Mat kernel;
+    int symmetryType;
+};
+
+
 typedef RowNoVec RowVec_8u32s;
 typedef RowNoVec RowVec_16s32f;
 typedef RowNoVec RowVec_32f;
-typedef SymmRowSmallNoVec SymmRowSmallVec_32f;
+// typedef SymmRowSmallNoVec SymmRowSmallVec_32f;
 typedef ColumnNoVec SymmColumnVec_32s8u;
 typedef ColumnNoVec SymmColumnVec_32f16s;
 typedef ColumnNoVec SymmColumnVec_32f;
