@@ -564,77 +564,78 @@ struct SymmColumnVec_32f16s
         // if( !neon_supported )
         //     return 0;
 
-        int ksize2 = (kernel.rows + kernel.cols - 1)/2;
+        int _ksize = kernel.rows + kernel.cols - 1;
+        int ksize2 = _ksize / 2;
         const float* ky = kernel.ptr<float>() + ksize2;
         int i = 0, k;
         bool symmetrical = (symmetryType & KERNEL_SYMMETRICAL) != 0;
         const float** src = (const float**)_src;
         const float *S, *S2;
         short* dst = (short*)_dst;
-        __m128 d4 = _mm_set1_ps(delta);
+
+        float32x4_t d4 = vdupq_n_f32(delta);
 
         if( symmetrical )
         {
-            for( ; i <= width - 16; i += 16 )
+            if( _ksize == 1 )
+                return 0;
+
+            float32x4_t accl, acch;
+            accl = vdupq_n_f32(0);
+            acch = vdupq_n_f32(0);
+
+            float32x2_t k32;
+            k32 = vdup_n_f32(0);
+            k32 = vld1_lane_f32(ky, k32, 0);
+            k32 = vld1_lane_f32(ky + 1, k32, 1);
+
+            for( ; i <= width - 8; i += 8 )
             {
-                __m128 f = _mm_load_ss(ky);
-                f = _mm_shuffle_ps(f, f, 0);
-                __m128 s0, s1, s2, s3;
-                __m128 x0, x1;
+                float32x4_t x0l, x0h, x1l, x1h, x2l, x2h;
+
                 S = src[0] + i;
-                s0 = _mm_load_ps(S);
-                s1 = _mm_load_ps(S+4);
-                s0 = _mm_add_ps(_mm_mul_ps(s0, f), d4);
-                s1 = _mm_add_ps(_mm_mul_ps(s1, f), d4);
-                s2 = _mm_load_ps(S+8);
-                s3 = _mm_load_ps(S+12);
-                s2 = _mm_add_ps(_mm_mul_ps(s2, f), d4);
-                s3 = _mm_add_ps(_mm_mul_ps(s3, f), d4);
 
-                for( k = 1; k <= ksize2; k++ )
+                x0l = vld1q_f32(S);
+                x0h = vld1q_f32(S + 4);
+
+                S = src[1] + i;
+                S2 = src[-1] + i;
+
+                x1l = vld1q_f32(S);
+                x1h = vld1q_f32(S + 4);
+                x2l = vld1q_f32(S2);
+                x2h = vld1q_f32(S2 + 4);
+
+                accl = vmlaq_lane_f32(d4, x0l, k32, 0);
+                acch = vmlaq_lane_f32(d4, x0h, k32, 0);
+                accl = vmlaq_lane_f32(accl, vaddq_f32(x1l, x2l), k32, 1);
+                acch = vmlaq_lane_f32(acch, vaddq_f32(x1h, x2h), k32, 1);
+
+                for( k = 2; k <= ksize2; k++ )
                 {
                     S = src[k] + i;
                     S2 = src[-k] + i;
-                    f = _mm_load_ss(ky+k);
-                    f = _mm_shuffle_ps(f, f, 0);
-                    x0 = _mm_add_ps(_mm_load_ps(S), _mm_load_ps(S2));
-                    x1 = _mm_add_ps(_mm_load_ps(S+4), _mm_load_ps(S2+4));
-                    s0 = _mm_add_ps(s0, _mm_mul_ps(x0, f));
-                    s1 = _mm_add_ps(s1, _mm_mul_ps(x1, f));
-                    x0 = _mm_add_ps(_mm_load_ps(S+8), _mm_load_ps(S2+8));
-                    x1 = _mm_add_ps(_mm_load_ps(S+12), _mm_load_ps(S2+12));
-                    s2 = _mm_add_ps(s2, _mm_mul_ps(x0, f));
-                    s3 = _mm_add_ps(s3, _mm_mul_ps(x1, f));
+
+                    float32x4_t x3l, x3h, x4l, x4h;
+                    x3l = vld1q_f32(S);
+                    x3h = vld1q_f32(S + 4);
+                    x4l = vld1q_f32(S2);
+                    x4h = vld1q_f32(S2 + 4);
+
+                    accl = vmlaq_n_f32(accl, vaddq_f32(x3l, x4l), ky[k]);
+                    acch = vmlaq_n_f32(acch, vaddq_f32(x3h, x4h), ky[k]);
                 }
 
-                __m128i s0i = _mm_cvtps_epi32(s0);
-                __m128i s1i = _mm_cvtps_epi32(s1);
-                __m128i s2i = _mm_cvtps_epi32(s2);
-                __m128i s3i = _mm_cvtps_epi32(s3);
+                int32x4_t s32l, s32h;
+                s32l = vcvtq_s32_f32(accl);
+                s32h = vcvtq_s32_f32(acch);
 
-                _mm_storeu_si128((__m128i*)(dst + i), _mm_packs_epi32(s0i, s1i));
-                _mm_storeu_si128((__m128i*)(dst + i + 8), _mm_packs_epi32(s2i, s3i));
-            }
+                int16x4_t s16l, s16h;
+                s16l = vqmovn_s32(s32l);
+                s16h = vqmovn_s32(s32h);
 
-            for( ; i <= width - 4; i += 4 )
-            {
-                __m128 f = _mm_load_ss(ky);
-                f = _mm_shuffle_ps(f, f, 0);
-                __m128 x0, s0 = _mm_load_ps(src[0] + i);
-                s0 = _mm_add_ps(_mm_mul_ps(s0, f), d4);
-
-                for( k = 1; k <= ksize2; k++ )
-                {
-                    f = _mm_load_ss(ky+k);
-                    f = _mm_shuffle_ps(f, f, 0);
-                    S = src[k] + i;
-                    S2 = src[-k] + i;
-                    x0 = _mm_add_ps(_mm_load_ps(src[k]+i), _mm_load_ps(src[-k] + i));
-                    s0 = _mm_add_ps(s0, _mm_mul_ps(x0, f));
-                }
-
-                __m128i s0i = _mm_cvtps_epi32(s0);
-                _mm_storel_epi64((__m128i*)(dst + i), _mm_packs_epi32(s0i, s0i));
+                vst1_s16((int16_t *)(dst + i), s16l);
+                vst1_s16((int16_t *)(dst + i + 4), s16h);
             }
         }
         else
@@ -668,22 +669,6 @@ struct SymmColumnVec_32f16s
 
                 _mm_storeu_si128((__m128i*)(dst + i), _mm_packs_epi32(s0i, s1i));
                 _mm_storeu_si128((__m128i*)(dst + i + 8), _mm_packs_epi32(s2i, s3i));
-            }
-
-            for( ; i <= width - 4; i += 4 )
-            {
-                __m128 f, x0, s0 = d4;
-
-                for( k = 1; k <= ksize2; k++ )
-                {
-                    f = _mm_load_ss(ky+k);
-                    f = _mm_shuffle_ps(f, f, 0);
-                    x0 = _mm_sub_ps(_mm_load_ps(src[k]+i), _mm_load_ps(src[-k] + i));
-                    s0 = _mm_add_ps(s0, _mm_mul_ps(x0, f));
-                }
-
-                __m128i s0i = _mm_cvtps_epi32(s0);
-                _mm_storel_epi64((__m128i*)(dst + i), _mm_packs_epi32(s0i, s0i));
             }
         }
 
