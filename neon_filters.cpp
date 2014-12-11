@@ -494,13 +494,10 @@ struct SymmRowSmallVec_32f
 
                         float32x4_t y0, y1, y2, y3, y4;
                         y0 = vmulq_lane_f32(x0, k0, 0);
-                        y1 = vmulq_lane_f32(vaddq_f32(x1, x2), k0, 1);
-                        y2 = vmulq_lane_f32(vaddq_f32(x3, x4), k1, 0);
+                        y0 = vmlaq_lane_f32(y0, vaddq_f32(x1, x2), k0, 1);
+                        y0 = vmlaq_lane_f32(y0, vaddq_f32(x3, x4), k1, 0);
 
-                        y3 = vaddq_f32(y0, y1);
-                        y4 = vaddq_f32(y2, y3);
-
-                        vst1q_f32(dst + i, y4);
+                        vst1q_f32(dst + i, y0);
                     }
                 }
             }
