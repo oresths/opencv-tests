@@ -492,7 +492,7 @@ struct SymmRowSmallVec_32f
                         x3 = vld1q_f32(src - cn*2);
                         x4 = vld1q_f32(src + cn*2);
 
-                        float32x4_t y0, y1, y2, y3, y4;
+                        float32x4_t y0;
                         y0 = vmulq_lane_f32(x0, k0, 0);
                         y0 = vmlaq_lane_f32(y0, vaddq_f32(x1, x2), k0, 1);
                         y0 = vmlaq_lane_f32(y0, vaddq_f32(x3, x4), k1, 0);
@@ -515,25 +515,24 @@ struct SymmRowSmallVec_32f
             }
             else if( _ksize == 5 )
             {
-                __m128 k1 = _mm_set1_ps(kx[1]), k2 = _mm_set1_ps(kx[2]);
-                for( ; i <= width - 8; i += 8, src += 8 )
+                float32x2_t k;
+                k = vdup_n_f32(0);
+                k = vld1_lane_f32(kx + 1, k, 0);
+                k = vld1_lane_f32(kx + 2, k, 1);
+
+                for( ; i <= width - 4; i += 4, src += 4 )
                 {
-                    __m128 x0, x2, y0, y2;
-                    x0 = _mm_loadu_ps(src + cn);
-                    x2 = _mm_loadu_ps(src - cn);
-                    y0 = _mm_loadu_ps(src + cn + 4);
-                    y2 = _mm_loadu_ps(src - cn + 4);
+                    float32x4_t x0, x1, x2, x3;
+                    x0 = vld1q_f32(src - cn);
+                    x1 = vld1q_f32(src + cn);
+                    x2 = vld1q_f32(src - cn*2);
+                    x3 = vld1q_f32(src + cn*2);
 
-                    x0 = _mm_mul_ps(_mm_sub_ps(x0, x2), k1);
-                    y0 = _mm_mul_ps(_mm_sub_ps(y0, y2), k1);
+                    float32x4_t y0;
+                    y0 = vmulq_lane_f32(vsubq_f32(x1, x0), k, 0);
+                    y0 = vmlaq_lane_f32(y0, vsubq_f32(x3, x2), k, 1);
 
-                    x2 = _mm_sub_ps(_mm_loadu_ps(src + cn*2), _mm_loadu_ps(src - cn*2));
-                    y2 = _mm_sub_ps(_mm_loadu_ps(src + cn*2 + 4), _mm_loadu_ps(src - cn*2 + 4));
-                    x0 = _mm_add_ps(x0, _mm_mul_ps(x2, k2));
-                    y0 = _mm_add_ps(y0, _mm_mul_ps(y2, k2));
-
-                    _mm_store_ps(dst + i, x0);
-                    _mm_store_ps(dst + i + 4, y0);
+                    vst1q_f32(dst + i, y0);
                 }
             }
         }
