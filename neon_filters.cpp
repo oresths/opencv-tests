@@ -445,8 +445,9 @@ struct SymmRowSmallVec_32f
 
     int operator()(const uchar* _src, uchar* _dst, int width, int cn) const
     {
-        if( !checkHardwareSupport(CV_CPU_SSE) )
-            return 0;
+        //Uncomment the two following lines when runtime support for neon is implemented.
+        // if( !checkHardwareSupport(CV_CPU_NEON) )
+        //     return 0;
 
         int i = 0, _ksize = kernel.rows + kernel.cols - 1;
         float* dst = (float*)_dst;
@@ -476,29 +477,30 @@ struct SymmRowSmallVec_32f
                     return 0;
                 else
                 {
-                    __m128 k0 = _mm_set1_ps(kx[0]), k1 = _mm_set1_ps(kx[1]), k2 = _mm_set1_ps(kx[2]);
-                    for( ; i <= width - 8; i += 8, src += 8 )
+                    float32x2_t k0, k1;
+                    k0 = k1 = vdup_n_f32(0);
+                    k0 = vld1_lane_f32(kx + 0, k0, 0);
+                    k0 = vld1_lane_f32(kx + 1, k0, 1);
+                    k1 = vld1_lane_f32(kx + 2, k1, 0);
+
+                    for( ; i <= width - 4; i += 4, src += 4 )
                     {
-                        __m128 x0, x1, x2, y0, y1, y2;
-                        x0 = _mm_loadu_ps(src - cn);
-                        x1 = _mm_loadu_ps(src);
-                        x2 = _mm_loadu_ps(src + cn);
-                        y0 = _mm_loadu_ps(src - cn + 4);
-                        y1 = _mm_loadu_ps(src + 4);
-                        y2 = _mm_loadu_ps(src + cn + 4);
+                        float32x4_t x0, x1, x2, x3, x4;
+                        x0 = vld1q_f32(src);
+                        x1 = vld1q_f32(src - cn);
+                        x2 = vld1q_f32(src + cn);
+                        x3 = vld1q_f32(src - cn*2);
+                        x4 = vld1q_f32(src + cn*2);
 
-                        x0 = _mm_mul_ps(_mm_add_ps(x0, x2), k1);
-                        y0 = _mm_mul_ps(_mm_add_ps(y0, y2), k1);
-                        x0 = _mm_add_ps(x0, _mm_mul_ps(x1, k0));
-                        y0 = _mm_add_ps(y0, _mm_mul_ps(y1, k0));
+                        float32x4_t y0, y1, y2, y3, y4;
+                        y0 = vmulq_lane_f32(x0, k0, 0);
+                        y1 = vmulq_lane_f32(vaddq_f32(x1, x2), k0, 1);
+                        y2 = vmulq_lane_f32(vaddq_f32(x3, x4), k1, 0);
 
-                        x2 = _mm_add_ps(_mm_loadu_ps(src + cn*2), _mm_loadu_ps(src - cn*2));
-                        y2 = _mm_add_ps(_mm_loadu_ps(src + cn*2 + 4), _mm_loadu_ps(src - cn*2 + 4));
-                        x0 = _mm_add_ps(x0, _mm_mul_ps(x2, k2));
-                        y0 = _mm_add_ps(y0, _mm_mul_ps(y2, k2));
+                        y3 = vaddq_f32(y0, y1);
+                        y4 = vaddq_f32(y2, y3);
 
-                        _mm_store_ps(dst + i, x0);
-                        _mm_store_ps(dst + i + 4, y0);
+                        vst1q_f32(dst + i, y4);
                     }
                 }
             }
@@ -547,12 +549,162 @@ struct SymmRowSmallVec_32f
 };
 
 
+struct SymmColumnVec_32f16s
+{
+    SymmColumnVec_32f16s() { symmetryType=0; }
+    SymmColumnVec_32f16s(const Mat& _kernel, int _symmetryType, int, double _delta)
+    {
+        symmetryType = _symmetryType;
+        kernel = _kernel;
+        delta = (float)_delta;
+        CV_Assert( (symmetryType & (KERNEL_SYMMETRICAL | KERNEL_ASYMMETRICAL)) != 0 );
+        //Uncomment the following line when runtime support for neon is implemented.
+        // neon_supported = checkHardwareSupport(CV_CPU_NEON);
+    }
+
+    int operator()(const uchar** _src, uchar* _dst, int width) const
+    {
+        //Uncomment the two following lines when runtime support for neon is implemented.
+        // if( !neon_supported )
+        //     return 0;
+
+        int ksize2 = (kernel.rows + kernel.cols - 1)/2;
+        const float* ky = kernel.ptr<float>() + ksize2;
+        int i = 0, k;
+        bool symmetrical = (symmetryType & KERNEL_SYMMETRICAL) != 0;
+        const float** src = (const float**)_src;
+        const float *S, *S2;
+        short* dst = (short*)_dst;
+        __m128 d4 = _mm_set1_ps(delta);
+
+        if( symmetrical )
+        {
+            for( ; i <= width - 16; i += 16 )
+            {
+                __m128 f = _mm_load_ss(ky);
+                f = _mm_shuffle_ps(f, f, 0);
+                __m128 s0, s1, s2, s3;
+                __m128 x0, x1;
+                S = src[0] + i;
+                s0 = _mm_load_ps(S);
+                s1 = _mm_load_ps(S+4);
+                s0 = _mm_add_ps(_mm_mul_ps(s0, f), d4);
+                s1 = _mm_add_ps(_mm_mul_ps(s1, f), d4);
+                s2 = _mm_load_ps(S+8);
+                s3 = _mm_load_ps(S+12);
+                s2 = _mm_add_ps(_mm_mul_ps(s2, f), d4);
+                s3 = _mm_add_ps(_mm_mul_ps(s3, f), d4);
+
+                for( k = 1; k <= ksize2; k++ )
+                {
+                    S = src[k] + i;
+                    S2 = src[-k] + i;
+                    f = _mm_load_ss(ky+k);
+                    f = _mm_shuffle_ps(f, f, 0);
+                    x0 = _mm_add_ps(_mm_load_ps(S), _mm_load_ps(S2));
+                    x1 = _mm_add_ps(_mm_load_ps(S+4), _mm_load_ps(S2+4));
+                    s0 = _mm_add_ps(s0, _mm_mul_ps(x0, f));
+                    s1 = _mm_add_ps(s1, _mm_mul_ps(x1, f));
+                    x0 = _mm_add_ps(_mm_load_ps(S+8), _mm_load_ps(S2+8));
+                    x1 = _mm_add_ps(_mm_load_ps(S+12), _mm_load_ps(S2+12));
+                    s2 = _mm_add_ps(s2, _mm_mul_ps(x0, f));
+                    s3 = _mm_add_ps(s3, _mm_mul_ps(x1, f));
+                }
+
+                __m128i s0i = _mm_cvtps_epi32(s0);
+                __m128i s1i = _mm_cvtps_epi32(s1);
+                __m128i s2i = _mm_cvtps_epi32(s2);
+                __m128i s3i = _mm_cvtps_epi32(s3);
+
+                _mm_storeu_si128((__m128i*)(dst + i), _mm_packs_epi32(s0i, s1i));
+                _mm_storeu_si128((__m128i*)(dst + i + 8), _mm_packs_epi32(s2i, s3i));
+            }
+
+            for( ; i <= width - 4; i += 4 )
+            {
+                __m128 f = _mm_load_ss(ky);
+                f = _mm_shuffle_ps(f, f, 0);
+                __m128 x0, s0 = _mm_load_ps(src[0] + i);
+                s0 = _mm_add_ps(_mm_mul_ps(s0, f), d4);
+
+                for( k = 1; k <= ksize2; k++ )
+                {
+                    f = _mm_load_ss(ky+k);
+                    f = _mm_shuffle_ps(f, f, 0);
+                    S = src[k] + i;
+                    S2 = src[-k] + i;
+                    x0 = _mm_add_ps(_mm_load_ps(src[k]+i), _mm_load_ps(src[-k] + i));
+                    s0 = _mm_add_ps(s0, _mm_mul_ps(x0, f));
+                }
+
+                __m128i s0i = _mm_cvtps_epi32(s0);
+                _mm_storel_epi64((__m128i*)(dst + i), _mm_packs_epi32(s0i, s0i));
+            }
+        }
+        else
+        {
+            for( ; i <= width - 16; i += 16 )
+            {
+                __m128 f, s0 = d4, s1 = d4, s2 = d4, s3 = d4;
+                __m128 x0, x1;
+                S = src[0] + i;
+
+                for( k = 1; k <= ksize2; k++ )
+                {
+                    S = src[k] + i;
+                    S2 = src[-k] + i;
+                    f = _mm_load_ss(ky+k);
+                    f = _mm_shuffle_ps(f, f, 0);
+                    x0 = _mm_sub_ps(_mm_load_ps(S), _mm_load_ps(S2));
+                    x1 = _mm_sub_ps(_mm_load_ps(S+4), _mm_load_ps(S2+4));
+                    s0 = _mm_add_ps(s0, _mm_mul_ps(x0, f));
+                    s1 = _mm_add_ps(s1, _mm_mul_ps(x1, f));
+                    x0 = _mm_sub_ps(_mm_load_ps(S+8), _mm_load_ps(S2+8));
+                    x1 = _mm_sub_ps(_mm_load_ps(S+12), _mm_load_ps(S2+12));
+                    s2 = _mm_add_ps(s2, _mm_mul_ps(x0, f));
+                    s3 = _mm_add_ps(s3, _mm_mul_ps(x1, f));
+                }
+
+                __m128i s0i = _mm_cvtps_epi32(s0);
+                __m128i s1i = _mm_cvtps_epi32(s1);
+                __m128i s2i = _mm_cvtps_epi32(s2);
+                __m128i s3i = _mm_cvtps_epi32(s3);
+
+                _mm_storeu_si128((__m128i*)(dst + i), _mm_packs_epi32(s0i, s1i));
+                _mm_storeu_si128((__m128i*)(dst + i + 8), _mm_packs_epi32(s2i, s3i));
+            }
+
+            for( ; i <= width - 4; i += 4 )
+            {
+                __m128 f, x0, s0 = d4;
+
+                for( k = 1; k <= ksize2; k++ )
+                {
+                    f = _mm_load_ss(ky+k);
+                    f = _mm_shuffle_ps(f, f, 0);
+                    x0 = _mm_sub_ps(_mm_load_ps(src[k]+i), _mm_load_ps(src[-k] + i));
+                    s0 = _mm_add_ps(s0, _mm_mul_ps(x0, f));
+                }
+
+                __m128i s0i = _mm_cvtps_epi32(s0);
+                _mm_storel_epi64((__m128i*)(dst + i), _mm_packs_epi32(s0i, s0i));
+            }
+        }
+
+        return i;
+    }
+
+    int symmetryType;
+    float delta;
+    Mat kernel;
+    bool neon_supported;
+};
+
+
 typedef RowNoVec RowVec_8u32s;
 typedef RowNoVec RowVec_16s32f;
 typedef RowNoVec RowVec_32f;
-// typedef SymmRowSmallNoVec SymmRowSmallVec_32f;
 typedef ColumnNoVec SymmColumnVec_32s8u;
-typedef ColumnNoVec SymmColumnVec_32f16s;
 typedef ColumnNoVec SymmColumnVec_32f;
 typedef SymmColumnSmallNoVec SymmColumnSmallVec_32f;
 typedef FilterNoVec FilterVec_8u;
