@@ -254,7 +254,8 @@ struct SymmColumnSmallVec_32s16s
         // if( !checkHardwareSupport(CV_CPU_NEON) )
         //     return 0;
 
-        int ksize2 = (kernel.rows + kernel.cols - 1)/2;
+        int _ksize = kernel.rows + kernel.cols - 1;
+        int ksize2 = _ksize / 2;
         const float* ky = kernel.ptr<float>() + ksize2;
         int i = 0;
         bool symmetrical = (symmetryType & KERNEL_SYMMETRICAL) != 0;
@@ -266,74 +267,110 @@ struct SymmColumnSmallVec_32s16s
 
         if( symmetrical )
         {
-            if( ky[0] == 2 && ky[1] == 1 )
+            if( _ksize == 3 )
             {
-                for( ; i <= width - 4; i += 4 )
+                if( ky[0] == 2 && ky[1] == 1 )
                 {
-                    int32x4_t x0, x1, x2;
-                    x0 = vld1q_s32((int32_t const *)(S0 + i));
-                    x1 = vld1q_s32((int32_t const *)(S1 + i));
-                    x2 = vld1q_s32((int32_t const *)(S2 + i));
+                    for( ; i <= width - 4; i += 4 )
+                    {
+                        int32x4_t x0, x1, x2;
+                        x0 = vld1q_s32((int32_t const *)(S0 + i));
+                        x1 = vld1q_s32((int32_t const *)(S1 + i));
+                        x2 = vld1q_s32((int32_t const *)(S2 + i));
 
-                    int32x4_t y0, y1, y2, y3;
-                    y0 = vaddq_s32(x0, x2);
-                    y1 = vqshlq_n_s32(x1, 1);
-                    y2 = vaddq_s32(y0, y1);
-                    y3 = vaddq_s32(y2, d4);
+                        int32x4_t y0, y1, y2, y3;
+                        y0 = vaddq_s32(x0, x2);
+                        y1 = vqshlq_n_s32(x1, 1);
+                        y2 = vaddq_s32(y0, y1);
+                        y3 = vaddq_s32(y2, d4);
 
-                    int16x4_t t;
-                    t = vqmovn_s32(y3);
+                        int16x4_t t;
+                        t = vqmovn_s32(y3);
 
-                    vst1_s16((int16_t *)(dst + i), t);
+                        vst1_s16((int16_t *)(dst + i), t);
+                    }
+                }
+                else if( ky[0] == -2 && ky[1] == 1 )
+                {
+                    for( ; i <= width - 4; i += 4 )
+                    {
+                        int32x4_t x0, x1, x2;
+                        x0 = vld1q_s32((int32_t const *)(S0 + i));
+                        x1 = vld1q_s32((int32_t const *)(S1 + i));
+                        x2 = vld1q_s32((int32_t const *)(S2 + i));
+
+                        int32x4_t y0, y1, y2, y3;
+                        y0 = vaddq_s32(x0, x2);
+                        y1 = vqshlq_n_s32(x1, 1);
+                        y2 = vsubq_s32(y0, y1);
+                        y3 = vaddq_s32(y2, d4);
+
+                        int16x4_t t;
+                        t = vqmovn_s32(y3);
+
+                        vst1_s16((int16_t *)(dst + i), t);
+                    }
+                }
+                else if( ky[0] == 10 && ky[1] == 3 )
+                {
+                    for( ; i <= width - 4; i += 4 )
+                    {
+                        int32x4_t x0, x1, x2, x3;
+                        x0 = vld1q_s32((int32_t const *)(S0 + i));
+                        x1 = vld1q_s32((int32_t const *)(S1 + i));
+                        x2 = vld1q_s32((int32_t const *)(S2 + i));
+
+                        x3 = vaddq_s32(x0, x2);
+
+                        int32x4_t y0;
+                        y0 = vmlaq_n_s32(d4, x1, 10);
+                        y0 = vmlaq_n_s32(y0, x3, 3);
+
+                        int16x4_t t;
+                        t = vqmovn_s32(y0);
+
+                        vst1_s16((int16_t *)(dst + i), t);
+                    }
+                }
+                else
+                {
+                    float32x2_t k32 = vdup_n_f32(0);
+                    k32 = vld1_lane_f32(ky, k32, 0);
+                    k32 = vld1_lane_f32(ky + 1, k32, 1);
+
+                    for( ; i <= width - 4; i += 4 )
+                    {
+                        int32x4_t x0, x1, x2, x3, x4;
+                        x0 = vld1q_s32((int32_t const *)(S0 + i));
+                        x1 = vld1q_s32((int32_t const *)(S1 + i));
+                        x2 = vld1q_s32((int32_t const *)(S2 + i));
+
+                        x3 = vaddq_s32(x0, x2);
+
+                        float32x4_t s0, s1, s2;
+                        s0 = vcvtq_f32_s32(x1);
+                        s1 = vcvtq_f32_s32(x3);
+                        s2 = vmlaq_lane_f32(df4, s0, k32, 0);
+                        s2 = vmlaq_lane_f32(s2, s1, k32, 1);
+
+                        x4 = vcvtq_s32_f32(s2);
+
+                        int16x4_t x5;
+                        x5 = vqmovn_s32(x4);
+
+                        vst1_s16((int16_t *)(dst + i), x5);
+                    }
                 }
             }
-            else if( ky[0] == -2 && ky[1] == 1 )
+            else if( _ksize == 5 )
             {
-                for( ; i <= width - 4; i += 4 )
-                {
-                    int32x4_t x0, x1, x2;
-                    x0 = vld1q_s32((int32_t const *)(S0 + i));
-                    x1 = vld1q_s32((int32_t const *)(S1 + i));
-                    x2 = vld1q_s32((int32_t const *)(S2 + i));
+                const int *S4 = src[-2], *S3 = src[2];
 
-                    int32x4_t y0, y1, y2, y3;
-                    y0 = vaddq_s32(x0, x2);
-                    y1 = vqshlq_n_s32(x1, 1);
-                    y2 = vsubq_s32(y0, y1);
-                    y3 = vaddq_s32(y2, d4);
-
-                    int16x4_t t;
-                    t = vqmovn_s32(y3);
-
-                    vst1_s16((int16_t *)(dst + i), t);
-                }
-            }
-            else if( ky[0] == 10 && ky[1] == 3 )
-            {
-                for( ; i <= width - 4; i += 4 )
-                {
-                    int32x4_t x0, x1, x2, x3;
-                    x0 = vld1q_s32((int32_t const *)(S0 + i));
-                    x1 = vld1q_s32((int32_t const *)(S1 + i));
-                    x2 = vld1q_s32((int32_t const *)(S2 + i));
-
-                    x3 = vaddq_s32(x0, x2);
-
-                    int32x4_t y0;
-                    y0 = vmlaq_n_s32(d4, x1, 10);
-                    y0 = vmlaq_n_s32(y0, x3, 3);
-
-                    int16x4_t t;
-                    t = vqmovn_s32(y0);
-
-                    vst1_s16((int16_t *)(dst + i), t);
-                }
-            }
-            else
-            {
-                float32x2_t k32 = vdup_n_f32(0);
-                k32 = vld1_lane_f32(ky, k32, 0);
-                k32 = vld1_lane_f32(ky + 1, k32, 1);
+                float32x2_t k0, k1;
+                k0 = k1 = vdup_n_f32(0);
+                k0 = vld1_lane_f32(kx + 0, k0, 0);
+                k0 = vld1_lane_f32(kx + 1, k0, 1);
+                k1 = vld1_lane_f32(kx + 2, k1, 0);
 
                 for( ; i <= width - 4; i += 4 )
                 {
@@ -341,70 +378,83 @@ struct SymmColumnSmallVec_32s16s
                     x0 = vld1q_s32((int32_t const *)(S0 + i));
                     x1 = vld1q_s32((int32_t const *)(S1 + i));
                     x2 = vld1q_s32((int32_t const *)(S2 + i));
+                    x3 = vld1q_s32((int32_t const *)(S3 + i));
+                    x4 = vld1q_s32((int32_t const *)(S4 + i));
 
-                    x3 = vaddq_s32(x0, x2);
+                    int32x4_t y0, y1, y2;
+                    y0 = vaddq_s32(x0, x2);
+                    y1 = vaddq_s32(x3, x4);
 
                     float32x4_t s0, s1, s2;
                     s0 = vcvtq_f32_s32(x1);
-                    s1 = vcvtq_f32_s32(x3);
-                    s2 = vmlaq_lane_f32(df4, s0, k32, 0);
-                    s2 = vmlaq_lane_f32(s2, s1, k32, 1);
+                    s1 = vcvtq_f32_s32(y0);
+                    s2 = vcvtq_f32_s32(y1);
+                    s3 = vmlaq_lane_f32(df4, s0, k0, 0);
+                    s3 = vmlaq_lane_f32(s3, s1, k0, 1);
+                    s3 = vmlaq_lane_f32(s3, s2, k1, 0);
 
-                    x4 = vcvtq_s32_f32(s2);
+                    y2 = vcvtq_s32_f32(s3);
 
-                    int16x4_t x5;
-                    x5 = vqmovn_s32(x4);
+                    int16x4_t y3;
+                    y3 = vqmovn_s32(y2);
 
-                    vst1_s16((int16_t *)(dst + i), x5);
+                    vst1_s16((int16_t *)(dst + i), y3);
                 }
             }
         }
         else
         {
-            if( fabs(ky[1]) == 1 && ky[1] == -ky[-1] )
+            if( _ksize == 3 )
             {
-                if( ky[1] < 0 )
-                    std::swap(S0, S2);
-                for( ; i <= width - 4; i += 4 )
+                if( fabs(ky[1]) == 1 && ky[1] == -ky[-1] )
                 {
-                    int32x4_t x0, x1;
-                    x0 = vld1q_s32((int32_t const *)(S0 + i));
-                    x1 = vld1q_s32((int32_t const *)(S2 + i));
+                    if( ky[1] < 0 )
+                        std::swap(S0, S2);
+                    for( ; i <= width - 4; i += 4 )
+                    {
+                        int32x4_t x0, x1;
+                        x0 = vld1q_s32((int32_t const *)(S0 + i));
+                        x1 = vld1q_s32((int32_t const *)(S2 + i));
 
-                    int32x4_t y0, y1;
-                    y0 = vsubq_s32(x1, x0);
-                    y1 = vqaddq_s32(y0, d4);
+                        int32x4_t y0, y1;
+                        y0 = vsubq_s32(x1, x0);
+                        y1 = vqaddq_s32(y0, d4);
 
-                    int16x4_t t;
-                    t = vqmovn_s32(y1);
+                        int16x4_t t;
+                        t = vqmovn_s32(y1);
 
-                    vst1_s16((int16_t *)(dst + i), t);
+                        vst1_s16((int16_t *)(dst + i), t);
+                    }
+                }
+                else
+                {
+                    float32x2_t k32 = vdup_n_f32(0);
+                    k32 = vld1_lane_f32(ky + 1, k32, 1);
+
+                    for( ; i <= width - 4; i += 4 )
+                    {
+                        int32x4_t x0, x1, x2, x3;
+                        x0 = vld1q_s32((int32_t const *)(S0 + i));
+                        x1 = vld1q_s32((int32_t const *)(S2 + i));
+
+                        x2 = vsubq_s32(x0, x1);
+
+                        float32x4_t s0, s1;
+                        s0 = vcvtq_f32_s32(x2);
+                        s1 = vmlaq_lane_f32(df4, s0, k32, 1);
+
+                        x3 = vcvtq_s32_f32(s1);
+
+                        int16x4_t x4;
+                        x4 = vqmovn_s32(x3);
+
+                        vst1_s16((int16_t *)(dst + i), x4);
+                    }
                 }
             }
-            else
+            else if( _ksize == 5 )
             {
-                float32x2_t k32 = vdup_n_f32(0);
-                k32 = vld1_lane_f32(ky + 1, k32, 1);
-
-                for( ; i <= width - 4; i += 4 )
-                {
-                    int32x4_t x0, x1, x2, x3;
-                    x0 = vld1q_s32((int32_t const *)(S0 + i));
-                    x1 = vld1q_s32((int32_t const *)(S2 + i));
-
-                    x2 = vsubq_s32(x0, x1);
-
-                    float32x4_t s0, s1;
-                    s0 = vcvtq_f32_s32(x2);
-                    s1 = vmlaq_lane_f32(df4, s0, k32, 1);
-
-                    x3 = vcvtq_s32_f32(s1);
-
-                    int16x4_t x4;
-                    x4 = vqmovn_s32(x3);
-
-                    vst1_s16((int16_t *)(dst + i), x4);
-                }
+                return 0;
             }
         }
 
