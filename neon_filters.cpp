@@ -607,7 +607,39 @@ struct SymmColumnSmallVec_32s16s
             }
             else if( _ksize == 5 )
             {
-                return 0;
+                const int *S4 = src[-2], *S3 = src[2];
+
+                float32x2_t k;
+                k = vdup_n_f32(0);
+                k = vld1_lane_f32(ky + 1, k, 0);
+                k = vld1_lane_f32(ky + 2, k, 1);
+
+                for( ; i <= width - 4; i += 4 )
+                {
+                    int32x4_t x0, x1, x2, x3, x4;
+                    x0 = vld1q_s32((int32_t const *)(S0 + i));
+                    x1 = vld1q_s32((int32_t const *)(S1 + i));
+                    x2 = vld1q_s32((int32_t const *)(S2 + i));
+                    x3 = vld1q_s32((int32_t const *)(S3 + i));
+                    x4 = vld1q_s32((int32_t const *)(S4 + i));
+
+                    int32x4_t y0, y1, y2;
+                    y0 = vsubq_s32(x2, x0);
+                    y1 = vsubq_s32(x3, x4);
+
+                    float32x4_t s1, s2, s3;
+                    s1 = vcvtq_f32_s32(y0);
+                    s2 = vcvtq_f32_s32(y1);
+                    s3 = vmlaq_lane_f32(df4, s1, k, 0);
+                    s3 = vmlaq_lane_f32(s3, s2, k, 1);
+
+                    y2 = vcvtq_s32_f32(s3);
+
+                    int16x4_t y3;
+                    y3 = vqmovn_s32(y2);
+
+                    vst1_s16((int16_t *)(dst + i), y3);
+                }
             }
         }
 
