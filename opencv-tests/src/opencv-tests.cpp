@@ -35,6 +35,10 @@ int main()
 //	Mat ky = (Mat_<float>(1,5) << 0.1, 0.2408, 0.3184, 0.2408, 0.1);
 //	Mat kx = (Mat_<float>(1,5) << -0.9432, -1.1528, 0, 1.1528, 0.9432);
 
+	//symmrowsmall8u32s if dst=8U and replace KERNEL_SMOOTH+KERNEL_SYMMETRICAL -> KERNEL_ASYMMETRICAL
+//	Mat kx = (Mat_<float>(1,5) << -0.9432, -1.1528, 0, 1.1528, 0.9432);
+//	Mat ky = (Mat_<float>(1,5) << -0.9432, -1.1528, 0, 1.1528, 0.9432);
+
 //	Mat dst;
 //
 //	sepFilter2D(Mat(5, 5, CV_8U, m), dst, CV_16S, kx, ky, Point(-1, -1), 0, BORDER_DEFAULT);
@@ -65,7 +69,8 @@ int main()
 //    Sobel(grey, sobelx, CV_16S, 1, 0, -1);//x Scharr
 //    Sobel(grey, sobelx, CV_16S, 0, 1, -1);//y Scharr kernel_row=[3, 10, 3]
     sepFilter2D(grey, sobelx, CV_16S, kx, ky, Point(-1, -1), 0, BORDER_DEFAULT);
-//    Canny(fgrey, sobelx, 10, 30);
+//    sepFilter2D(grey, sobelx, CV_16S, ky, kx, Point(-1, -1), 0, BORDER_DEFAULT);
+//    Canny(grey, sobelx, 10, 30);
 
     exec_time = ((double)getTickCount() - exec_time)*1000./getTickFrequency();
 	cout << "exec_time = " << exec_time << " ms" << endl;
@@ -77,6 +82,15 @@ int main()
 
     Mat draw;
     sobelx.convertTo(draw, CV_8U, 255.0/(maxVal - minVal), -minVal * 255.0/(maxVal - minVal));
+
+    Mat current, previous, test;
+    //save and reload jpeg to avoid difference caused by compression
+    imwrite("/home/odroid/Pictures/edges0.jpg", draw);
+    current = imread("/home/odroid/Pictures/edges0.jpg", IMREAD_UNCHANGED);
+    previous = imread("/home/odroid/Pictures/edges.jpg", IMREAD_UNCHANGED);
+    test = previous != current;
+    bool equal = cv::countNonZero(test) == 0;
+    cout << "1 = " << equal << endl;
 
     imwrite("/home/odroid/Pictures/edges.jpg", draw);
     imwrite("/home/odroid/Pictures/blur.jpg", fgrey);
