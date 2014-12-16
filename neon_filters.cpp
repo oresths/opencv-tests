@@ -616,9 +616,8 @@ struct SymmColumnSmallVec_32s16s
 
                 for( ; i <= width - 4; i += 4 )
                 {
-                    int32x4_t x0, x1, x2, x3, x4;
+                    int32x4_t x0, x2, x3, x4;
                     x0 = vld1q_s32((int32_t const *)(S0 + i));
-                    x1 = vld1q_s32((int32_t const *)(S1 + i));
                     x2 = vld1q_s32((int32_t const *)(S2 + i));
                     x3 = vld1q_s32((int32_t const *)(S3 + i));
                     x4 = vld1q_s32((int32_t const *)(S4 + i));
