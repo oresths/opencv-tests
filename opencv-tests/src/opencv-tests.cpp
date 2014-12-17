@@ -17,8 +17,16 @@
 using namespace cv;
 using namespace std;
 
-int main()
+int main(int argc, char **argv)
 {
+	int loops;
+	if (argc == 1) {
+		loops = 1;
+	} else if (argc == 2) {
+		if (sscanf (argv[1], "%i", &loops)!=1) { printf ("error - not an integer"); }
+	} else cout << "Wrong number of arguments" << endl;
+
+
 //	unsigned char m[5][5] = {{1,2,3,4,5}, {6,7,8,9,10}, {11,12,13,14,15}, {16,17,18,19,20}, {21,22,23,24,25}};
 	Mat kx = (Mat_<signed char>(1,3) << -1, 0, 1);
 	Mat ky = (Mat_<signed char>(1,3) << 1, 2, 1);
@@ -50,30 +58,31 @@ int main()
     Mat grey;
     cvtColor(src1, grey, COLOR_BGR2GRAY);
 
-    Mat sobelx;
+//    Mat sobelx;
+    //preallocate matrix
+    Mat sobelx(grey.rows, grey.cols, CV_16S, Scalar(0));
 
     Mat fgrey;
 
-//    GaussianBlur(grey, fgrey, Size(5,5), 1.1, 0);
-//    blur(grey, fgrey, Size(20,20));
-//    getGaussianKernel()
+    double exec_time= (double)getTickCount();
+//    while (((double)getTickCount() - exec_time)*1000./getTickFrequency() < 2000) {}
 
-    double exec_time = (double)getTickCount();
+	for (int i = 0; i < loops; ++i) {
+//		sobelx=kx;
+		//    GaussianBlur(grey, fgrey, Size(5,5), 1.1, 0);
+		//    bilateralFilter(grey, fgrey, 5, 50, 50);
+		//    blur(grey, fgrey, Size(5,5));
 
-//    GaussianBlur(grey, fgrey, Size(5,5), 1.1, 0);
-//    bilateralFilter(grey, fgrey, 5, 50, 50);
-//    blur(grey, fgrey, Size(5,5));
+		//    grey.convertTo(grey, CV_32F);
 
-//    grey.convertTo(grey, CV_32F);
-
-//    Sobel(grey, sobelx, CV_16S, 1, 0, -1);//x Scharr
-//    Sobel(grey, sobelx, CV_16S, 0, 1, -1);//y Scharr kernel_row=[3, 10, 3]
-    sepFilter2D(grey, sobelx, CV_16S, kx, ky, Point(-1, -1), 0, BORDER_DEFAULT);
-//    sepFilter2D(grey, sobelx, CV_16S, ky, kx, Point(-1, -1), 0, BORDER_DEFAULT);
-//    Canny(grey, sobelx, 10, 30);
-
-    exec_time = ((double)getTickCount() - exec_time)*1000./getTickFrequency();
-	cout << "exec_time = " << exec_time << " ms" << endl;
+		//    Sobel(grey, sobelx, CV_16S, 1, 0, -1);//x Scharr
+		//    Sobel(grey, sobelx, CV_16S, 0, 1, -1);//y Scharr kernel_row=[3, 10, 3]
+		sepFilter2D(grey, sobelx, CV_16S, kx, ky, Point(-1, -1), 0, BORDER_DEFAULT);
+		//    sepFilter2D(grey, sobelx, CV_16S, ky, kx, Point(-1, -1), 0, BORDER_DEFAULT);
+		//    Canny(grey, sobelx, 10, 30);
+	}
+//	exec_time = ((double)getTickCount() - exec_time)*1000./getTickFrequency()/loops;
+//	cout << "average exec_time = " << exec_time << " ms" << endl;
 
 
     double minVal, maxVal;
