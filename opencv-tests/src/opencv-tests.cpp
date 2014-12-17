@@ -17,33 +17,34 @@
 using namespace cv;
 using namespace std;
 
-int main(int argc, char **argv)
-{
-	int loops;
-	if (argc == 1) {
-		loops = 1;
-	} else if (argc == 2) {
-		if (sscanf (argv[1], "%i", &loops)!=1) { printf ("error - not an integer"); }
-	} else cout << "Wrong number of arguments" << endl;
-
+int main(int argc, char **argv) {
+    int loops;
+    if (argc == 1) {
+        loops = 1;
+    } else if (argc == 2) {
+        if (sscanf(argv[1], "%i", &loops) != 1) {
+            printf("error - not an integer");
+        }
+    } else
+        cout << "Wrong number of arguments" << endl;
 
 //	unsigned char m[5][5] = {{1,2,3,4,5}, {6,7,8,9,10}, {11,12,13,14,15}, {16,17,18,19,20}, {21,22,23,24,25}};
-	Mat kx = (Mat_<signed char>(1,3) << -1, 0, 1);
-	Mat ky = (Mat_<signed char>(1,3) << 1, 2, 1);
+    Mat kx = (Mat_<signed char>(1, 3) << -1, 0, 1);
+    Mat ky = (Mat_<signed char>(1, 3) << 1, 2, 1);
 
 //	//symmrowsmall8u32s - symmcolumnsmall32s16s, kx<->ky, integer kernel
 //	Mat kx = (Mat_<signed char>(1,3) << -2, 0, 2);
 //	Mat ky = (Mat_<signed char>(1,3) << 3, 10, 3);
 
-	//symmrowsmall8u32s if dst=8U
+//symmrowsmall8u32s if dst=8U
 //	Mat kx = (Mat_<float>(1,5) << 0.0708, 0.2445, 0.3694, 0.2445, 0.0708);
 //	Mat ky = (Mat_<float>(1,5) << 0.0708, 0.2445, 0.3694, 0.2445, 0.0708);
 
-	//if (dst==16S && 1<<bits && accept non-integer) symmrowsmall8u32s
+//if (dst==16S && 1<<bits && accept non-integer) symmrowsmall8u32s
 //	Mat ky = (Mat_<float>(1,5) << 0.1, 0.2408, 0.3184, 0.2408, 0.1);
 //	Mat kx = (Mat_<float>(1,5) << -0.9432, -1.1528, 0, 1.1528, 0.9432);
 
-	//symmrowsmall8u32s if dst=8U and replace KERNEL_SMOOTH+KERNEL_SYMMETRICAL -> KERNEL_ASYMMETRICAL
+//symmrowsmall8u32s if dst=8U and replace KERNEL_SMOOTH+KERNEL_SYMMETRICAL -> KERNEL_ASYMMETRICAL
 //	Mat kx = (Mat_<float>(1,5) << -0.9432, -1.1528, 0, 1.1528, 0.9432);
 //	Mat ky = (Mat_<float>(1,5) << -0.9432, -1.1528, 0, 1.1528, 0.9432);
 
@@ -58,39 +59,38 @@ int main(int argc, char **argv)
     Mat grey;
     cvtColor(src1, grey, COLOR_BGR2GRAY);
 
-//    Mat sobelx;
-    //preallocate matrix
+    //preallocate matrix and give values to every element to trigger linux page fault mechanism
+    //before filter operations, otherwise page faults during columnfilter would add about 28ms
+    //to column filter time
     Mat sobelx(grey.rows, grey.cols, CV_16S, Scalar(0));
 
     Mat fgrey;
 
-    double exec_time= (double)getTickCount();
-//    while (((double)getTickCount() - exec_time)*1000./getTickFrequency() < 2000) {}
+    double exec_time = (double) getTickCount();
+    for (int i = 0; i < loops; ++i) {
+        //    GaussianBlur(grey, fgrey, Size(5,5), 1.1, 0);
+        //    bilateralFilter(grey, fgrey, 5, 50, 50);
+        //    blur(grey, fgrey, Size(5,5));
 
-	for (int i = 0; i < loops; ++i) {
-//		sobelx=kx;
-		//    GaussianBlur(grey, fgrey, Size(5,5), 1.1, 0);
-		//    bilateralFilter(grey, fgrey, 5, 50, 50);
-		//    blur(grey, fgrey, Size(5,5));
+        //    grey.convertTo(grey, CV_32F);
 
-		//    grey.convertTo(grey, CV_32F);
-
-		//    Sobel(grey, sobelx, CV_16S, 1, 0, -1);//x Scharr
-		//    Sobel(grey, sobelx, CV_16S, 0, 1, -1);//y Scharr kernel_row=[3, 10, 3]
-		sepFilter2D(grey, sobelx, CV_16S, kx, ky, Point(-1, -1), 0, BORDER_DEFAULT);
-		//    sepFilter2D(grey, sobelx, CV_16S, ky, kx, Point(-1, -1), 0, BORDER_DEFAULT);
-		//    Canny(grey, sobelx, 10, 30);
-	}
+        //    Sobel(grey, sobelx, CV_16S, 1, 0, -1);//x Scharr
+        //    Sobel(grey, sobelx, CV_16S, 0, 1, -1);//y Scharr kernel_row=[3, 10, 3]
+        sepFilter2D(grey, sobelx, CV_16S, kx, ky, Point(-1, -1), 0, BORDER_DEFAULT);
+        //    sepFilter2D(grey, sobelx, CV_16S, ky, kx, Point(-1, -1), 0, BORDER_DEFAULT);
+        //    Canny(grey, sobelx, 10, 30);
+    }
 //	exec_time = ((double)getTickCount() - exec_time)*1000./getTickFrequency()/loops;
 //	cout << "average exec_time = " << exec_time << " ms" << endl;
-
+    exec_time = ((double) getTickCount() - exec_time) * 1000. / getTickFrequency() / loops;
+    cout << "average exec_time = " << exec_time << " ms" << endl;
 
     double minVal, maxVal;
     minMaxLoc(sobelx, &minVal, &maxVal); //find minimum and maximum intensities
 //    cout << "minVal : " << minVal << endl << "maxVal : " << maxVal << endl;
 
     Mat draw;
-    sobelx.convertTo(draw, CV_8U, 255.0/(maxVal - minVal), -minVal * 255.0/(maxVal - minVal));
+    sobelx.convertTo(draw, CV_8U, 255.0 / (maxVal - minVal), -minVal * 255.0 / (maxVal - minVal));
 
     Mat current, previous, test;
     //save and reload jpeg to avoid difference caused by compression
