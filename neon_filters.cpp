@@ -607,7 +607,7 @@ struct SymmColumnSmallVec_32s16s
             }
             else if( _ksize == 5 )
             {
-                const int *S4 = src[-2], *S3 = src[2];
+                const int *S3 = src[-2], *S4 = src[2];
 
                 float32x2_t k;
                 k = vdup_n_f32(0);
@@ -624,7 +624,7 @@ struct SymmColumnSmallVec_32s16s
 
                     int32x4_t y0, y1, y2;
                     y0 = vsubq_s32(x2, x0);
-                    y1 = vsubq_s32(x3, x4);
+                    y1 = vsubq_s32(x4, x3);
 
                     float32x4_t s1, s2, s3;
                     s1 = vcvtq_f32_s32(y0);
