@@ -29,12 +29,13 @@ int main(int argc, char **argv) {
         cout << "Wrong number of arguments" << endl;
 
 //	unsigned char m[5][5] = {{1,2,3,4,5}, {6,7,8,9,10}, {11,12,13,14,15}, {16,17,18,19,20}, {21,22,23,24,25}};
-    Mat kx = (Mat_<signed char>(1, 3) << -1, 0, 1);
-    Mat ky = (Mat_<signed char>(1, 3) << 1, 2, 1);
 
 //	//symmrowsmall8u32s - symmcolumnsmall32s16s, kx<->ky, integer kernel
-//	Mat kx = (Mat_<signed char>(1,3) << -2, 0, 2);
-//	Mat ky = (Mat_<signed char>(1,3) << 3, 10, 3);
+	Mat ky = (Mat_<signed char>(1,3) << -2, 0, 2);
+	Mat kx = (Mat_<signed char>(1,3) << 3, 12, 3);
+
+//    Mat ky = (Mat_<signed char>(1, 5) << -5, -2, 0, 2, 5);
+//    Mat kx = (Mat_<signed char>(1, 5) << 1, 3, 10, 3, 1);
 
 //symmrowsmall8u32s if dst=8U
 //	Mat kx = (Mat_<float>(1,5) << 0.0708, 0.2445, 0.3694, 0.2445, 0.0708);
@@ -83,7 +84,7 @@ int main(int argc, char **argv) {
 //	exec_time = ((double)getTickCount() - exec_time)*1000./getTickFrequency()/loops;
 //	cout << "average exec_time = " << exec_time << " ms" << endl;
     exec_time = ((double) getTickCount() - exec_time) * 1000. / getTickFrequency() / loops;
-    cout << "average exec_time = " << exec_time << " ms" << endl;
+    cout << "exec_time = " << exec_time << " ms" << endl;
 
     double minVal, maxVal;
     minMaxLoc(sobelx, &minVal, &maxVal); //find minimum and maximum intensities
@@ -97,8 +98,10 @@ int main(int argc, char **argv) {
     imwrite("/home/odroid/Pictures/edges0.jpg", draw);
     current = imread("/home/odroid/Pictures/edges0.jpg", IMREAD_UNCHANGED);
     previous = imread("/home/odroid/Pictures/edges.jpg", IMREAD_UNCHANGED);
+//    test = abs( previous - current ) > 4;
     test = previous != current;
-    bool equal = cv::countNonZero(test) == 0;
+    int cnz =  cv::countNonZero(test);
+    bool equal = cnz == 0;
     cout << "1 = " << equal << endl;
 
     imwrite("/home/odroid/Pictures/edges.jpg", draw);
