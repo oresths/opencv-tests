@@ -545,7 +545,7 @@ struct SymmColumnSmallVec_32s16s
                     x0 = vld1q_s32((int32_t const *)(S0 + i));
                     x1 = vld1q_s32((int32_t const *)(S2 + i));
 
-                    x2 = vsubq_s32(x0, x1);
+                    x2 = vsubq_s32(x1, x0);
 
                     float32x4_t s0, s1;
                     s0 = vcvtq_f32_s32(x2);
