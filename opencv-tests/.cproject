@@ -28,7 +28,7 @@
 									<listOptionValue builtIn="false" value="/home/menas/nfs/odroid/rootfs/usr/local/include/"/>
 									<listOptionValue builtIn="false" value="/home/menas/nfs/odroid/rootfs/usr/local/include/opencv"/>
 								</option>
-								<option id="gnu.c.compiler.option.optimization.flags.1051370899" superClass="gnu.c.compiler.option.optimization.flags" value="-mfpu=neon -march=armv7-a -mthumb-interwork -mfloat-abi=hard -mtune=cortex-a15 -Wno-poison-system-directories " valueType="string"/>
+								<option id="gnu.c.compiler.option.optimization.flags.1051370899" name="Other optimization flags" superClass="gnu.c.compiler.option.optimization.flags" value="-mfpu=neon -march=armv7-a -mthumb-interwork -mfloat-abi=hard -mtune=cortex-a15 -Wno-poison-system-directories " valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.514723163" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
 							<tool command="g++" commandLinePattern="${COMMAND} ${FLAGS} ${OUTPUT_FLAG} ${OUTPUT_PREFIX}${OUTPUT} ${INPUTS}" errorParsers="org.eclipse.cdt.core.GCCErrorParser" id="cdt.managedbuild.tool.gnu.cross.cpp.compiler.802905091" name="Cross G++ Compiler" superClass="cdt.managedbuild.tool.gnu.cross.cpp.compiler">
@@ -38,7 +38,7 @@
 									<listOptionValue builtIn="false" value="/home/menas/nfs/odroid/rootfs/usr/local/include/"/>
 									<listOptionValue builtIn="false" value="/home/menas/nfs/odroid/rootfs/usr/local/include/opencv"/>
 								</option>
-								<option id="gnu.cpp.compiler.option.optimization.flags.604194921" superClass="gnu.cpp.compiler.option.optimization.flags" value="-mfpu=neon -march=armv7-a -mthumb-interwork -mfloat-abi=hard -mtune=cortex-a15 -Wno-poison-system-directories " valueType="string"/>
+								<option id="gnu.cpp.compiler.option.optimization.flags.604194921" name="Other optimization flags" superClass="gnu.cpp.compiler.option.optimization.flags" value="-mfpu=neon -march=armv7-a -mthumb-interwork -mfloat-abi=hard -mtune=cortex-a15 -Wno-poison-system-directories " valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.944657816" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.cross.c.linker.1950417525" name="Cross GCC Linker" superClass="cdt.managedbuild.tool.gnu.cross.c.linker"/>

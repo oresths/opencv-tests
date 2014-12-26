@@ -31,19 +31,19 @@ int main(int argc, char **argv) {
 //	unsigned char m[5][5] = {{1,2,3,4,5}, {6,7,8,9,10}, {11,12,13,14,15}, {16,17,18,19,20}, {21,22,23,24,25}};
 
 //	//symmrowsmall8u32s - symmcolumnsmall32s16s, kx<->ky, integer kernel
-	Mat ky = (Mat_<signed char>(1,3) << -2, 0, 2);
-	Mat kx = (Mat_<signed char>(1,3) << 3, 12, 3);
+//	Mat ky = (Mat_<signed char>(1,3) << -2, 0, 2);
+//	Mat kx = (Mat_<signed char>(1,3) << 3, 12, 3);
 
 //    Mat ky = (Mat_<signed char>(1, 5) << -5, -2, 0, 2, 5);
 //    Mat kx = (Mat_<signed char>(1, 5) << 1, 3, 10, 3, 1);
 
 //symmrowsmall8u32s if dst=8U
-//	Mat kx = (Mat_<float>(1,5) << 0.0708, 0.2445, 0.3694, 0.2445, 0.0708);
-//	Mat ky = (Mat_<float>(1,5) << 0.0708, 0.2445, 0.3694, 0.2445, 0.0708);
+	Mat kx = (Mat_<float>(1,5) << 0.0708, 0.2445, 0.3694, 0.2445, 0.0708);
+	Mat ky = (Mat_<float>(1,5) << 0.0708, 0.2445, 0.3694, 0.2445, 0.0708);
 
 //if (dst==16S && 1<<bits && accept non-integer) symmrowsmall8u32s
-//	Mat ky = (Mat_<float>(1,5) << 0.1, 0.2408, 0.3184, 0.2408, 0.1);
-//	Mat kx = (Mat_<float>(1,5) << -0.9432, -1.1528, 0, 1.1528, 0.9432);
+//	Mat kx = (Mat_<float>(1,5) << 0.1, 0.2408, 0.3184, 0.2408, 0.1);
+//	Mat ky = (Mat_<float>(1,5) << -0.9432, -1.1528, 0, 1.1528, 0.9432);
 
 //symmrowsmall8u32s if dst=8U and replace KERNEL_SMOOTH+KERNEL_SYMMETRICAL -> KERNEL_ASYMMETRICAL
 //	Mat kx = (Mat_<float>(1,5) << -0.9432, -1.1528, 0, 1.1528, 0.9432);
@@ -69,22 +69,24 @@ int main(int argc, char **argv) {
 
     double exec_time = (double) getTickCount();
     for (int i = 0; i < loops; ++i) {
-        //    GaussianBlur(grey, fgrey, Size(5,5), 1.1, 0);
+            GaussianBlur(grey, fgrey, Size(5,5), 1.1, 0);
         //    bilateralFilter(grey, fgrey, 5, 50, 50);
         //    blur(grey, fgrey, Size(5,5));
 
-        //    grey.convertTo(grey, CV_32F);
+//            grey.convertTo(grey, CV_32F);
 
         //    Sobel(grey, sobelx, CV_16S, 1, 0, -1);//x Scharr
         //    Sobel(grey, sobelx, CV_16S, 0, 1, -1);//y Scharr kernel_row=[3, 10, 3]
-        sepFilter2D(grey, sobelx, CV_16S, kx, ky, Point(-1, -1), 0, BORDER_DEFAULT);
+//        sepFilter2D(grey, sobelx, CV_16S, kx, ky, Point(-1, -1), 0, BORDER_DEFAULT);
         //    sepFilter2D(grey, sobelx, CV_16S, ky, kx, Point(-1, -1), 0, BORDER_DEFAULT);
-        //    Canny(grey, sobelx, 10, 30);
+
+            exec_time = (double) getTickCount();
+            Canny(fgrey, sobelx, 100, 150);
+            exec_time = ((double) getTickCount() - exec_time) * 1000. / getTickFrequency();
+            cout << "Canny exec_time = " << exec_time << " ms" << endl;
     }
 //	exec_time = ((double)getTickCount() - exec_time)*1000./getTickFrequency()/loops;
 //	cout << "average exec_time = " << exec_time << " ms" << endl;
-    exec_time = ((double) getTickCount() - exec_time) * 1000. / getTickFrequency() / loops;
-    cout << "exec_time = " << exec_time << " ms" << endl;
 
     double minVal, maxVal;
     minMaxLoc(sobelx, &minVal, &maxVal); //find minimum and maximum intensities
@@ -98,7 +100,7 @@ int main(int argc, char **argv) {
     imwrite("/home/odroid/Pictures/edges0.jpg", draw);
     current = imread("/home/odroid/Pictures/edges0.jpg", IMREAD_UNCHANGED);
     previous = imread("/home/odroid/Pictures/edges.jpg", IMREAD_UNCHANGED);
-//    test = abs( previous - current ) > 4;
+//    test = abs( previous - current ) > 1;
     test = previous != current;
     int cnz =  cv::countNonZero(test);
     bool equal = cnz == 0;
