@@ -6,12 +6,12 @@
 // Description : Hello World in C++, Ansi-style
 //============================================================================
 
-//#include "opencv2/core/core.hpp"
+#include "opencv2/core/core.hpp"
 //#include "opencv2/highgui/highgui.hpp"
-//#include "opencv2/imgproc/imgproc.hpp"
-//#include "opencv2/imgcodecs/imgcodecs.hpp"
+#include "opencv2/imgproc/imgproc.hpp"
+#include "opencv2/imgcodecs/imgcodecs.hpp"
 #include "opencv2/opencv_modules.hpp"
-#include "opencv2/opencv.hpp"
+//#include "opencv2/opencv.hpp"
 #include "iostream"
 
 using namespace cv;
@@ -100,11 +100,13 @@ int main(int argc, char **argv) {
     imwrite("/home/odroid/Pictures/edges0.jpg", draw);
     current = imread("/home/odroid/Pictures/edges0.jpg", IMREAD_UNCHANGED);
     previous = imread("/home/odroid/Pictures/edges.jpg", IMREAD_UNCHANGED);
-//    test = abs( previous - current ) > 1;
-    test = previous != current;
-    int cnz =  cv::countNonZero(test);
-    bool equal = cnz == 0;
-    cout << "1 = " << equal << endl;
+    if (previous.data) {
+//        test = abs( previous - current ) > 1;
+        test = previous != current;
+        int cnz =  cv::countNonZero(test);
+        bool equal = cnz == 0;
+        cout << "1 = " << equal << endl;
+    }
 
     imwrite("/home/odroid/Pictures/edges.jpg", draw);
     imwrite("/home/odroid/Pictures/blur.jpg", fgrey);
