@@ -70,7 +70,7 @@ int main(int argc, char **argv) {
     double exec_time = (double) getTickCount();
     for (int i = 0; i < loops; ++i) {
             GaussianBlur(grey, fgrey, Size(5,5), 1.1, 0);
-        //    bilateralFilter(grey, fgrey, 5, 50, 50);
+//            bilateralFilter(grey, fgrey, 5, 50, 50);
         //    blur(grey, fgrey, Size(5,5));
 
 //            grey.convertTo(grey, CV_32F);
@@ -81,7 +81,7 @@ int main(int argc, char **argv) {
         //    sepFilter2D(grey, sobelx, CV_16S, ky, kx, Point(-1, -1), 0, BORDER_DEFAULT);
 
             exec_time = (double) getTickCount();
-            Canny(fgrey, sobelx, 100, 150);
+            Canny(fgrey, sobelx, 100, 150, 3);
             exec_time = ((double) getTickCount() - exec_time) * 1000. / getTickFrequency();
             cout << "Canny exec_time = " << exec_time << " ms" << endl;
     }
@@ -99,8 +99,9 @@ int main(int argc, char **argv) {
     //save and reload jpeg to avoid difference caused by compression
     imwrite("/home/odroid/Pictures/edges0.jpg", draw);
     current = imread("/home/odroid/Pictures/edges0.jpg", IMREAD_UNCHANGED);
-    previous = imread("/home/odroid/Pictures/edges.jpg", IMREAD_UNCHANGED);
-    if (previous.data) {
+    previous = imread("/home/odroid/Pictures/dedges100_150.jpg", IMREAD_UNCHANGED);
+//    previous = imread("/home/odroid/Pictures/dedges100_150.jpg", IMREAD_UNCHANGED);
+    if (previous.rows == current.rows && previous.cols == current.cols) {
 //        test = abs( previous - current ) > 1;
         test = previous != current;
         int cnz =  cv::countNonZero(test);
