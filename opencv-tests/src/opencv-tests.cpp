@@ -1,3 +1,4 @@
+/*
 //============================================================================
 // Name        : opencv-tests.cpp
 // Author      : ore
@@ -81,6 +82,7 @@ int main(int argc, char **argv) {
         //    sepFilter2D(grey, sobelx, CV_16S, ky, kx, Point(-1, -1), 0, BORDER_DEFAULT);
 
             exec_time = (double) getTickCount();
+//            Canny(src1, sobelx, 100, 150, 3);
             Canny(fgrey, sobelx, 100, 150, 3);
             exec_time = ((double) getTickCount() - exec_time) * 1000. / getTickFrequency();
             cout << "Canny exec_time = " << exec_time << " ms" << endl;
@@ -99,8 +101,8 @@ int main(int argc, char **argv) {
     //save and reload jpeg to avoid difference caused by compression
     imwrite("/home/odroid/Pictures/edges0.jpg", draw);
     current = imread("/home/odroid/Pictures/edges0.jpg", IMREAD_UNCHANGED);
+//    previous = imread("/home/odroid/Pictures/edges.jpg", IMREAD_UNCHANGED);
     previous = imread("/home/odroid/Pictures/dedges100_150.jpg", IMREAD_UNCHANGED);
-//    previous = imread("/home/odroid/Pictures/dedges100_150.jpg", IMREAD_UNCHANGED);
     if (previous.rows == current.rows && previous.cols == current.cols) {
 //        test = abs( previous - current ) > 1;
         test = previous != current;
@@ -111,6 +113,53 @@ int main(int argc, char **argv) {
 
     imwrite("/home/odroid/Pictures/edges.jpg", draw);
     imwrite("/home/odroid/Pictures/blur.jpg", fgrey);
+
+    return 0;
+}
+*/
+
+#include "opencv2/core/core.hpp"
+//#include "opencv2/highgui/highgui.hpp"
+#include "opencv2/imgproc/imgproc.hpp"
+#include "opencv2/imgcodecs/imgcodecs.hpp"
+#include "opencv2/opencv_modules.hpp"
+//#include "opencv2/opencv.hpp"
+#include "iostream"
+
+using namespace cv;
+using namespace std;
+
+int main(int argc, char **argv) {
+    int loops;
+    if (argc == 1) {
+        loops = 1;
+    } else if (argc == 2) {
+        if (sscanf(argv[1], "%i", &loops) != 1) {
+            printf("error - not an integer");
+        }
+    } else
+        cout << "Wrong number of arguments" << endl;
+
+
+    int count = 0;
+    Mat current, previous, test;
+    for (int i = 0; i < loops; ++i) {
+        Mat image = imread("/home/odroid/Pictures/a1.png", IMREAD_GRAYSCALE);
+
+        if (i==0) Canny(image, previous, 0, 0);
+        Canny(image, image, 0, 0);
+        current = image;
+        test = previous != current;
+        int cnz =  cv::countNonZero(test);
+        bool equal = cnz == 0;
+        if (!equal)
+        {
+            count++;
+            cout << "In loop " << i << " " << count << " failure" << endl;
+        }
+
+        current.copyTo(previous);
+    }
 
     return 0;
 }
