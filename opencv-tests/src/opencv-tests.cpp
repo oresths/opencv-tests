@@ -144,7 +144,7 @@ int main(int argc, char **argv) {
     int count = 0;
     Mat current, previous, test;
     for (int i = 0; i < loops; ++i) {
-        Mat image = imread("/home/odroid/Pictures/a1.png", IMREAD_GRAYSCALE);
+        Mat image = imread("/home/odroid/Pictures/lenna.jpg", IMREAD_GRAYSCALE);
 
         if (i==0) Canny(image, previous, 0, 0);
         Canny(image, image, 0, 0);
@@ -155,8 +155,15 @@ int main(int argc, char **argv) {
         if (!equal)
         {
             count++;
-            cout << "In loop " << i << " " << count << " failure" << endl;
+            cout << "In loop " << i << " " << count << "th failure with " << cnz << "mismatches" << endl;
+//            imwrite("/home/odroid/Pictures/isfail.jpg", image);
+//            break;
         }
+//        else
+//        {
+//            imwrite("/home/odroid/Pictures/iscorrect.jpg", image);
+//            break;
+//        }
 
         current.copyTo(previous);
     }
