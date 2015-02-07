@@ -1,4 +1,3 @@
-/*
 //============================================================================
 // Name        : opencv-tests.cpp
 // Author      : ore
@@ -32,15 +31,15 @@ int main(int argc, char **argv) {
 //	unsigned char m[5][5] = {{1,2,3,4,5}, {6,7,8,9,10}, {11,12,13,14,15}, {16,17,18,19,20}, {21,22,23,24,25}};
 
 //	//symmrowsmall8u32s - symmcolumnsmall32s16s, kx<->ky, integer kernel
-//	Mat ky = (Mat_<signed char>(1,3) << -2, 0, 2);
-//	Mat kx = (Mat_<signed char>(1,3) << 3, 12, 3);
+	Mat ky = (Mat_<signed char>(1,3) << -1, 0, 1);
+	Mat kx = (Mat_<signed char>(1,3) << 1, 2, 1);
 
 //    Mat ky = (Mat_<signed char>(1, 5) << -5, -2, 0, 2, 5);
 //    Mat kx = (Mat_<signed char>(1, 5) << 1, 3, 10, 3, 1);
 
 //symmrowsmall8u32s if dst=8U
-	Mat kx = (Mat_<float>(1,5) << 0.0708, 0.2445, 0.3694, 0.2445, 0.0708);
-	Mat ky = (Mat_<float>(1,5) << 0.0708, 0.2445, 0.3694, 0.2445, 0.0708);
+//	Mat kx = (Mat_<float>(1,5) << 0.0708, 0.2445, 0.3694, 0.2445, 0.0708);
+//	Mat ky = (Mat_<float>(1,5) << 0.0708, 0.2445, 0.3694, 0.2445, 0.0708);
 
 //if (dst==16S && 1<<bits && accept non-integer) symmrowsmall8u32s
 //	Mat kx = (Mat_<float>(1,5) << 0.1, 0.2408, 0.3184, 0.2408, 0.1);
@@ -64,11 +63,16 @@ int main(int argc, char **argv) {
     //preallocate matrix and give values to every element to trigger linux page fault mechanism
     //before filter operations, otherwise page faults during columnfilter would add about 28ms
     //to column filter time
-    Mat sobelx(grey.rows, grey.cols, CV_16S, Scalar(0));
+    double exec_time = (double) getTickCount();
+    exec_time = (double) getTickCount();
+    Mat sobelx(grey.rows, grey.cols, CV_8S, Scalar(0));
+    exec_time = ((double) getTickCount() - exec_time) * 1000. / getTickFrequency();
+    cout << "Memory alloc time = " << exec_time << " ms" << endl;
 
     Mat fgrey;
 
-    double exec_time = (double) getTickCount();
+    Mat ggrey(1, grey.cols, CV_8U, Scalar(55));
+
     for (int i = 0; i < loops; ++i) {
             GaussianBlur(grey, fgrey, Size(5,5), 1.1, 0);
 //            bilateralFilter(grey, fgrey, 5, 50, 50);
@@ -116,8 +120,9 @@ int main(int argc, char **argv) {
 
     return 0;
 }
-*/
 
+
+/*
 #include "opencv2/core/core.hpp"
 //#include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
@@ -143,12 +148,18 @@ int main(int argc, char **argv) {
 
     int count = 0;
     Mat current, previous, test;
+//    Mat image = imread("/home/odroid/Pictures/lenna.jpg", IMREAD_GRAYSCALE);
+
+    uchar low = 0;
+    uchar high = 0;
+
     for (int i = 0; i < loops; ++i) {
         Mat image = imread("/home/odroid/Pictures/lenna.jpg", IMREAD_GRAYSCALE);
-
-        if (i==0) Canny(image, previous, 0, 0);
-        Canny(image, image, 0, 0);
-        current = image;
+//        Mat image1;
+//        image.copyTo(image1);
+//        usleep(1000 *1000);
+        if (i==0) Canny(image, previous, low, high);
+        Canny(image, current, low, high);
         test = previous != current;
         int cnz =  cv::countNonZero(test);
         bool equal = cnz == 0;
@@ -170,3 +181,4 @@ int main(int argc, char **argv) {
 
     return 0;
 }
+*/

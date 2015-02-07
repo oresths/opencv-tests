@@ -101,15 +101,42 @@
 							<tool id="cdt.managedbuild.tool.gnu.cross.c.compiler.1799776004" name="Cross GCC Compiler" superClass="cdt.managedbuild.tool.gnu.cross.c.compiler">
 								<option defaultValue="gnu.c.optimization.level.most" id="gnu.c.compiler.option.optimization.level.795272144" name="Optimization Level" superClass="gnu.c.compiler.option.optimization.level" valueType="enumerated"/>
 								<option id="gnu.c.compiler.option.debugging.level.1839905798" name="Debug Level" superClass="gnu.c.compiler.option.debugging.level" value="gnu.c.debugging.level.none" valueType="enumerated"/>
+								<option id="gnu.c.compiler.option.optimization.flags.1603069675" superClass="gnu.c.compiler.option.optimization.flags" value="-mfpu=neon -march=armv7-a -mthumb-interwork -mfloat-abi=hard -mtune=cortex-a15 -Wno-poison-system-directories " valueType="string"/>
+								<option id="gnu.c.compiler.option.include.paths.713960142" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
+									<listOptionValue builtIn="false" value="/home/menas/nfs/odroid/rootfs/usr/local/include/"/>
+									<listOptionValue builtIn="false" value="/home/menas/nfs/odroid/rootfs/usr/local/include/opencv"/>
+								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.108245645" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.cross.cpp.compiler.1918253856" name="Cross G++ Compiler" superClass="cdt.managedbuild.tool.gnu.cross.cpp.compiler">
 								<option id="gnu.cpp.compiler.option.optimization.level.202403991" name="Optimization Level" superClass="gnu.cpp.compiler.option.optimization.level" value="gnu.cpp.compiler.optimization.level.most" valueType="enumerated"/>
 								<option id="gnu.cpp.compiler.option.debugging.level.1809678423" name="Debug Level" superClass="gnu.cpp.compiler.option.debugging.level" value="gnu.cpp.compiler.debugging.level.none" valueType="enumerated"/>
+								<option id="gnu.cpp.compiler.option.optimization.flags.1249491150" superClass="gnu.cpp.compiler.option.optimization.flags" value="-mfpu=neon -march=armv7-a -mthumb-interwork -mfloat-abi=hard -mtune=cortex-a15 -Wno-poison-system-directories " valueType="string"/>
+								<option id="gnu.cpp.compiler.option.include.paths.606910703" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
+									<listOptionValue builtIn="false" value="/home/menas/nfs/odroid/rootfs/usr/local/include/"/>
+									<listOptionValue builtIn="false" value="/home/menas/nfs/odroid/rootfs/usr/local/include/opencv"/>
+								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.438736091" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.cross.c.linker.896090685" name="Cross GCC Linker" superClass="cdt.managedbuild.tool.gnu.cross.c.linker"/>
 							<tool id="cdt.managedbuild.tool.gnu.cross.cpp.linker.30303633" name="Cross G++ Linker" superClass="cdt.managedbuild.tool.gnu.cross.cpp.linker">
+								<option id="gnu.cpp.link.option.libs.2142629362" superClass="gnu.cpp.link.option.libs" valueType="libs">
+									<listOptionValue builtIn="false" value="opencv_core"/>
+									<listOptionValue builtIn="false" value="opencv_imgcodecs"/>
+									<listOptionValue builtIn="false" value="opencv_imgproc"/>
+									<listOptionValue builtIn="false" value="opencv_highgui"/>
+									<listOptionValue builtIn="false" value="opencv_ml"/>
+									<listOptionValue builtIn="false" value="opencv_video"/>
+									<listOptionValue builtIn="false" value="opencv_features2d"/>
+									<listOptionValue builtIn="false" value="opencv_calib3d"/>
+									<listOptionValue builtIn="false" value="opencv_objdetect"/>
+									<listOptionValue builtIn="false" value="opencv_legacy"/>
+									<listOptionValue builtIn="false" value="opencv_flann"/>
+								</option>
+								<option id="gnu.cpp.link.option.paths.2118514237" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
+									<listOptionValue builtIn="false" value="/home/menas/nfs/odroid/rootfs/usr/local/lib"/>
+								</option>
+								<option id="gnu.cpp.link.option.flags.1196384417" superClass="gnu.cpp.link.option.flags" value="-L/home/menas/nfs/odroid/rootfs/usr/lib -Wl,-rpath-link,/home/menas/nfs/odroid/rootfs/usr/lib -L/home/menas/nfs/odroid/rootfs/lib -Wl,-rpath-link,/home/menas/nfs/odroid/rootfs/lib  -L/home/menas/nfs/odroid/rootfs/usr/local/lib -Wl,-rpath-link,/home/menas/nfs/odroid/rootfs/usr/local/lib -L/home/menas/nfs/odroid/rootfs/lib/arm-linux-gnueabihf -Wl,-rpath-link,/home/menas/nfs/odroid/rootfs/lib/arm-linux-gnueabihf -L/home/menas/nfs/odroid/rootfs/usr/lib/arm-linux-gnueabihf -Wl,-rpath-link,/home/menas/nfs/odroid/rootfs/usr/lib/arm-linux-gnueabihf" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.1517756616" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
