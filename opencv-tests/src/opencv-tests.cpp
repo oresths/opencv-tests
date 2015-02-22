@@ -14,9 +14,12 @@
 //#include "opencv2/opencv.hpp"
 #include <iostream>
 #include <fstream>
+#include<errno.h>
 
 using namespace cv;
 using namespace std;
+
+std::string DescribeIosFailure(const std::ios& stream);
 
 int main(int argc, char **argv) {
     int loops;
@@ -55,8 +58,7 @@ int main(int argc, char **argv) {
 //	sepFilter2D(Mat(5, 5, CV_8U, m), dst, CV_16S, kx, ky, Point(-1, -1), 0, BORDER_DEFAULT);
 
     Mat src1;
-//    src1 = imread(strcat(getenv("HOME"), "/Pictures/xar.jpg"), IMREAD_COLOR);
-    src1 = imread(strcat(getenv("HOME"), "/Pictures/people.jpg"), IMREAD_COLOR);
+    src1 = imread((string(getenv("HOME")) + "/Pictures/people.jpg").c_str(), IMREAD_COLOR);
 
     Mat grey;
     cvtColor(src1, grey, COLOR_BGR2GRAY);
@@ -72,8 +74,12 @@ int main(int argc, char **argv) {
 
     Mat fgrey;
 
-    ofstream file (strcat(getenv("HOME"), "/results.csv"), ios::out | ios::trunc);
-    if (!file.is_open()) exit(-1);
+    ofstream file ((std::string(getenv("HOME")) + "/results.csv").c_str(), ios::out | ios::trunc);
+    if (file.fail()) {
+        cout << "Error: " << DescribeIosFailure(file) << endl;
+        exit(1);
+    }
+
     for (int i = 0; i < loops; ++i) {
             GaussianBlur(grey, grey, Size(5,5), 1.1, 0);
 //            bilateralFilter(grey, fgrey, 5, 50, 50);
@@ -103,25 +109,40 @@ int main(int argc, char **argv) {
     Mat draw;
     sobelx.convertTo(draw, CV_8U, 255.0 / (maxVal - minVal), -minVal * 255.0 / (maxVal - minVal));
 
-    Mat current, previous, test;
-    //save and reload jpeg to avoid difference caused by compression
-    imwrite(strcat(getenv("HOME"), "/Pictures/edges0.jpg"), draw);
-    current = imread(strcat(getenv("HOME"), "/Pictures/edges0.jpg"), IMREAD_UNCHANGED);
-//    previous = imread(strcat(getenv("HOME"), "/Pictures/edges.jpg"), IMREAD_UNCHANGED);
-    previous = imread(strcat(getenv("HOME"), "/Pictures/dedges100_150.jpg"), IMREAD_UNCHANGED);
-    if (previous.rows == current.rows && previous.cols == current.cols) {
-//        test = abs( previous - current ) > 1;
-        test = previous != current;
-        int cnz =  cv::countNonZero(test);
-        bool equal = cnz == 0;
-        cout << "1 = " << equal << endl;
-    }
-
-    imwrite(strcat(getenv("HOME"), "/Pictures/edges.jpg"), draw);
-    imwrite(strcat(getenv("HOME"), "/Pictures/blur.jpg"), fgrey);
+    imwrite((string(getenv("HOME")) + "/Pictures/edges.jpg").c_str(), draw);
 
 
     file.close();
 
     return 0;
+}
+
+std::string DescribeIosFailure(const std::ios& stream)
+{
+  std::string result;
+
+  if (stream.eof()) {
+    result = "Unexpected end of file.";
+  }
+
+#ifdef WIN32
+  // GetLastError() gives more details than errno.
+  else if (GetLastError() != 0) {
+    result = FormatSystemMessage(GetLastError());
+  }
+#endif
+
+  else if (errno) {
+#if defined(__unix__)
+    // We use strerror_r because it's threadsafe.
+    // GNU's strerror_r returns a string and may ignore buffer completely.
+    char buffer[255];
+    result = std::string(strerror_r(errno, buffer, sizeof(buffer)));
+#else
+    result = std::string(strerror(errno));
+#endif
+
+  }
+
+  return result;
 }
