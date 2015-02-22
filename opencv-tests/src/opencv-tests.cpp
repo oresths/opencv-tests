@@ -57,31 +57,55 @@ int main(int argc, char **argv) {
 //
 //	sepFilter2D(Mat(5, 5, CV_8U, m), dst, CV_16S, kx, ky, Point(-1, -1), 0, BORDER_DEFAULT);
 
-    Mat src1;
-    src1 = imread((string(getenv("HOME")) + "/Pictures/people.jpg").c_str(), IMREAD_COLOR);
 
-    Mat grey;
-    cvtColor(src1, grey, COLOR_BGR2GRAY);
+    Mat src4k, grey4k;
+    src4k = imread((string(getenv("HOME")) + "/Pictures/people.jpg").c_str(), IMREAD_COLOR);
+    cvtColor(src4k, grey4k, COLOR_BGR2GRAY);
+
+    Mat src1080, grey1080;
+    src1080 = imread((string(getenv("HOME")) + "/Pictures/xar.jpg").c_str(), IMREAD_COLOR);
+    cvtColor(src1080, grey1080, COLOR_BGR2GRAY);
+
+    Mat src_small, grey_small;
+    src_small = imread((string(getenv("HOME")) + "/Pictures/xar.jpg").c_str(), IMREAD_COLOR);
+    cvtColor(src_small, grey_small, COLOR_BGR2GRAY);
+
+    Mat src_mess, grey_mess;
+    src_mess = imread((string(getenv("HOME")) + "/Pictures/xar.jpg").c_str(), IMREAD_COLOR);
+    cvtColor(src_mess, grey_mess, COLOR_BGR2GRAY);
 
     //preallocate matrix and give values to every element to trigger linux page fault mechanism
     //before filter operations, otherwise page faults during columnfilter would add about 28ms
     //to column filter time
     double exec_time = (double) getTickCount();
     exec_time = (double) getTickCount();
-    Mat sobelx(grey.rows, grey.cols, CV_8S, Scalar(0));
+    Mat sobelx(1080, 1920, CV_8S, Scalar(0));
     exec_time = ((double) getTickCount() - exec_time) * 1000. / getTickFrequency();
     cout << "Memory alloc time = " << exec_time << " ms" << endl;
 
-    Mat fgrey;
-
-    ofstream file ((std::string(getenv("HOME")) + "/results.csv").c_str(), ios::out | ios::trunc);
-    if (file.fail()) {
-        cout << "Error: " << DescribeIosFailure(file) << endl;
+    ofstream file4k ((std::string(getenv("HOME")) + "/results4k.csv").c_str(), ios::out | ios::trunc);
+    if (file4k.fail()) {
+        cout << "Error: " << DescribeIosFailure(file4k) << endl;
+        exit(1);
+    }
+    ofstream file1080 ((std::string(getenv("HOME")) + "/results1080.csv").c_str(), ios::out | ios::trunc);
+    if (file1080.fail()) {
+        cout << "Error: " << DescribeIosFailure(file1080) << endl;
+        exit(1);
+    }
+    ofstream file_small ((std::string(getenv("HOME")) + "/results_small.csv").c_str(), ios::out | ios::trunc);
+    if (file_small.fail()) {
+        cout << "Error: " << DescribeIosFailure(file_small) << endl;
         exit(1);
     }
 
+    GaussianBlur(grey4k, grey4k, Size(5,5), 1.1, 0);
+    GaussianBlur(grey1080, grey1080, Size(5,5), 1.1, 0);
+    GaussianBlur(grey_small, grey_small, Size(5,5), 1.1, 0);
+    GaussianBlur(grey_mess, grey_mess, Size(5,5), 1.1, 0);
+
     for (int i = 0; i < loops; ++i) {
-            GaussianBlur(grey, grey, Size(5,5), 1.1, 0);
+
 //            bilateralFilter(grey, fgrey, 5, 50, 50);
         //    blur(grey, fgrey, Size(5,5));
 
@@ -92,27 +116,28 @@ int main(int argc, char **argv) {
 //        sepFilter2D(grey, sobelx, CV_16S, kx, ky, Point(-1, -1), 0, BORDER_DEFAULT);
         //    sepFilter2D(grey, sobelx, CV_16S, ky, kx, Point(-1, -1), 0, BORDER_DEFAULT);
 
-            exec_time = (double) getTickCount();
-            Canny(grey, sobelx, 100, 150, 3, false, file);
 //            Canny(grey, sobelx, 100, 150, 3);
-            exec_time = ((double) getTickCount() - exec_time) * 1000. / getTickFrequency();
-            cout << "Canny exec_time = " << exec_time << " ms" << endl;
+
 //            sobelx.release(); //to reallocate at every round
+
+        Canny(grey4k, sobelx, 100, 150, 3, false, file4k);
+
+        Canny(grey_mess, sobelx, 100, 150, 3); //causes sobelx reallocation and also messes the caches
+
+        Canny(grey1080, sobelx, 100, 150, 3, false, file1080);
+
+        Canny(grey_mess, sobelx, 100, 150, 3); //causes sobelx reallocation and also messes the caches
+
+        Canny(grey_small, sobelx, 100, 150, 3, false, file_small);
+
+        Canny(grey_mess, sobelx, 100, 150, 3); //causes sobelx reallocation and also messes the caches
     }
 //	exec_time = ((double)getTickCount() - exec_time)*1000./getTickFrequency()/loops;
 //	cout << "average exec_time = " << exec_time << " ms" << endl;
 
-    double minVal, maxVal;
-    minMaxLoc(sobelx, &minVal, &maxVal); //find minimum and maximum intensities
-//    cout << "minVal : " << minVal << endl << "maxVal : " << maxVal << endl;
-
-    Mat draw;
-    sobelx.convertTo(draw, CV_8U, 255.0 / (maxVal - minVal), -minVal * 255.0 / (maxVal - minVal));
-
-    imwrite((string(getenv("HOME")) + "/Pictures/edges.jpg").c_str(), draw);
-
-
-    file.close();
+    file4k.close();
+    file1080.close();
+    file_small.close();
 
     return 0;
 }
