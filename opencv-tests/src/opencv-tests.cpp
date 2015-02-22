@@ -12,7 +12,8 @@
 #include "opencv2/imgcodecs/imgcodecs.hpp"
 #include "opencv2/opencv_modules.hpp"
 //#include "opencv2/opencv.hpp"
-#include "iostream"
+#include <iostream>
+#include <fstream>
 
 using namespace cv;
 using namespace std;
@@ -54,8 +55,8 @@ int main(int argc, char **argv) {
 //	sepFilter2D(Mat(5, 5, CV_8U, m), dst, CV_16S, kx, ky, Point(-1, -1), 0, BORDER_DEFAULT);
 
     Mat src1;
-//    src1 = imread("/home/odroid/Pictures/xar.jpg", IMREAD_COLOR);
-    src1 = imread("/home/odroid/Pictures/people.jpg", IMREAD_COLOR);
+//    src1 = imread(strcat(getenv("HOME"), "/Pictures/xar.jpg"), IMREAD_COLOR);
+    src1 = imread(strcat(getenv("HOME"), "/Pictures/people.jpg"), IMREAD_COLOR);
 
     Mat grey;
     cvtColor(src1, grey, COLOR_BGR2GRAY);
@@ -71,10 +72,10 @@ int main(int argc, char **argv) {
 
     Mat fgrey;
 
-    Mat ggrey(1, grey.cols, CV_8U, Scalar(55));
-
+    ofstream file (strcat(getenv("HOME"), "/results.csv"), ios::out | ios::trunc);
+    if (!file.is_open()) exit(-1);
     for (int i = 0; i < loops; ++i) {
-            GaussianBlur(grey, fgrey, Size(5,5), 1.1, 0);
+            GaussianBlur(grey, grey, Size(5,5), 1.1, 0);
 //            bilateralFilter(grey, fgrey, 5, 50, 50);
         //    blur(grey, fgrey, Size(5,5));
 
@@ -86,10 +87,11 @@ int main(int argc, char **argv) {
         //    sepFilter2D(grey, sobelx, CV_16S, ky, kx, Point(-1, -1), 0, BORDER_DEFAULT);
 
             exec_time = (double) getTickCount();
-//            Canny(src1, sobelx, 100, 150, 3);
-            Canny(fgrey, sobelx, 100, 150, 3);
+            Canny(grey, sobelx, 100, 150, 3, false, file);
+//            Canny(grey, sobelx, 100, 150, 3);
             exec_time = ((double) getTickCount() - exec_time) * 1000. / getTickFrequency();
             cout << "Canny exec_time = " << exec_time << " ms" << endl;
+//            sobelx.release(); //to reallocate at every round
     }
 //	exec_time = ((double)getTickCount() - exec_time)*1000./getTickFrequency()/loops;
 //	cout << "average exec_time = " << exec_time << " ms" << endl;
@@ -103,10 +105,10 @@ int main(int argc, char **argv) {
 
     Mat current, previous, test;
     //save and reload jpeg to avoid difference caused by compression
-    imwrite("/home/odroid/Pictures/edges0.jpg", draw);
-    current = imread("/home/odroid/Pictures/edges0.jpg", IMREAD_UNCHANGED);
-//    previous = imread("/home/odroid/Pictures/edges.jpg", IMREAD_UNCHANGED);
-    previous = imread("/home/odroid/Pictures/dedges100_150.jpg", IMREAD_UNCHANGED);
+    imwrite(strcat(getenv("HOME"), "/Pictures/edges0.jpg"), draw);
+    current = imread(strcat(getenv("HOME"), "/Pictures/edges0.jpg"), IMREAD_UNCHANGED);
+//    previous = imread(strcat(getenv("HOME"), "/Pictures/edges.jpg"), IMREAD_UNCHANGED);
+    previous = imread(strcat(getenv("HOME"), "/Pictures/dedges100_150.jpg"), IMREAD_UNCHANGED);
     if (previous.rows == current.rows && previous.cols == current.cols) {
 //        test = abs( previous - current ) > 1;
         test = previous != current;
@@ -115,70 +117,11 @@ int main(int argc, char **argv) {
         cout << "1 = " << equal << endl;
     }
 
-    imwrite("/home/odroid/Pictures/edges.jpg", draw);
-    imwrite("/home/odroid/Pictures/blur.jpg", fgrey);
+    imwrite(strcat(getenv("HOME"), "/Pictures/edges.jpg"), draw);
+    imwrite(strcat(getenv("HOME"), "/Pictures/blur.jpg"), fgrey);
+
+
+    file.close();
 
     return 0;
 }
-
-
-/*
-#include "opencv2/core/core.hpp"
-//#include "opencv2/highgui/highgui.hpp"
-#include "opencv2/imgproc/imgproc.hpp"
-#include "opencv2/imgcodecs/imgcodecs.hpp"
-#include "opencv2/opencv_modules.hpp"
-//#include "opencv2/opencv.hpp"
-#include "iostream"
-
-using namespace cv;
-using namespace std;
-
-int main(int argc, char **argv) {
-    int loops;
-    if (argc == 1) {
-        loops = 1;
-    } else if (argc == 2) {
-        if (sscanf(argv[1], "%i", &loops) != 1) {
-            printf("error - not an integer");
-        }
-    } else
-        cout << "Wrong number of arguments" << endl;
-
-
-    int count = 0;
-    Mat current, previous, test;
-//    Mat image = imread("/home/odroid/Pictures/lenna.jpg", IMREAD_GRAYSCALE);
-
-    uchar low = 0;
-    uchar high = 0;
-
-    for (int i = 0; i < loops; ++i) {
-        Mat image = imread("/home/odroid/Pictures/lenna.jpg", IMREAD_GRAYSCALE);
-//        Mat image1;
-//        image.copyTo(image1);
-//        usleep(1000 *1000);
-        if (i==0) Canny(image, previous, low, high);
-        Canny(image, current, low, high);
-        test = previous != current;
-        int cnz =  cv::countNonZero(test);
-        bool equal = cnz == 0;
-        if (!equal)
-        {
-            count++;
-            cout << "In loop " << i << " " << count << "th failure with " << cnz << "mismatches" << endl;
-//            imwrite("/home/odroid/Pictures/isfail.jpg", image);
-//            break;
-        }
-//        else
-//        {
-//            imwrite("/home/odroid/Pictures/iscorrect.jpg", image);
-//            break;
-//        }
-
-        current.copyTo(previous);
-    }
-
-    return 0;
-}
-*/
