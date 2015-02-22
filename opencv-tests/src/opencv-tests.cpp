@@ -63,11 +63,11 @@ int main(int argc, char **argv) {
     cvtColor(src4k, grey4k, COLOR_BGR2GRAY);
 
     Mat src1080, grey1080;
-    src1080 = imread((string(getenv("HOME")) + "/Pictures/xar.jpg").c_str(), IMREAD_COLOR);
+    src1080 = imread((string(getenv("HOME")) + "/Pictures/trapezia.jpg").c_str(), IMREAD_COLOR);
     cvtColor(src1080, grey1080, COLOR_BGR2GRAY);
 
     Mat src_small, grey_small;
-    src_small = imread((string(getenv("HOME")) + "/Pictures/xar.jpg").c_str(), IMREAD_COLOR);
+    src_small = imread((string(getenv("HOME")) + "/Pictures/lenna.jpg").c_str(), IMREAD_COLOR);
     cvtColor(src_small, grey_small, COLOR_BGR2GRAY);
 
     Mat src_mess, grey_mess;
