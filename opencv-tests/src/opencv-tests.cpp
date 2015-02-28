@@ -15,10 +15,7 @@
 #include <fstream>
 #include<errno.h>
 
-#define CANNY 1
-#if !CANNY
-#define FILTERS 1
-#endif
+#define CANNY 1 //1 for canny tests, 0 for filter tests
 
 //filename
 #define TYPE "CS" // CS (Canny Steps), CA (Canny All), F (Filters)
@@ -109,9 +106,10 @@ int main(int argc, char **argv) {
     GaussianBlur(grey_small, canny_src_small, Size(5, 5), 1.1, 0);
     GaussianBlur(grey_mess, canny_src_mess, Size(5, 5), 1.1, 0);
 
-    uchar resolut_index, index;
+    uchar resolut_index;
+    int index;
     for (int i = 0; i < loops; ++i) {
-
+#if !CANNY
         resolut_index = 0;
 
         exec_time = (double) getTickCount();
@@ -119,28 +117,28 @@ int main(int argc, char **argv) {
         exec_time = ((double) getTickCount() - exec_time) * 1000. / getTickFrequency();
         index = i * num_of_tests * num_of_pictures + resolut_index * num_of_tests + 0;
         times[index] = exec_time;
-        Canny(grey_mess, filters_dst_mess, 100, 150, 3, false, file_null); //messes the caches
+        Canny(canny_src_mess, filters_dst_mess, 100, 150, 3, false, file_null); //messes the caches
 
         exec_time = (double) getTickCount();
         Sobel(grey4k, filters_dst_4k, CV_16S, 0, 1);   //y Sobel
         exec_time = ((double) getTickCount() - exec_time) * 1000. / getTickFrequency();
         index = i * num_of_tests * num_of_pictures + resolut_index * num_of_tests + 1;
         times[index] = exec_time;
-        Canny(grey_mess, filters_dst_mess, 100, 150, 3, false, file_null); //messes the caches
+        Canny(canny_src_mess, filters_dst_mess, 100, 150, 3, false, file_null); //messes the caches
 
         exec_time = (double) getTickCount();
         Scharr(grey4k, filters_dst_4k, CV_16S, 1, 0);  //x Scharr
         exec_time = ((double) getTickCount() - exec_time) * 1000. / getTickFrequency();
         index = i * num_of_tests * num_of_pictures + resolut_index * num_of_tests + 2;
         times[index] = exec_time;
-        Canny(grey_mess, filters_dst_mess, 100, 150, 3, false, file_null); //messes the caches
+        Canny(canny_src_mess, filters_dst_mess, 100, 150, 3, false, file_null); //messes the caches
 
         exec_time = (double) getTickCount();
         Scharr(grey4k, filters_dst_4k, CV_16S, 0, 1);  //y Scharr
         exec_time = ((double) getTickCount() - exec_time) * 1000. / getTickFrequency();
         index = i * num_of_tests * num_of_pictures + resolut_index * num_of_tests + 3;
         times[index] = exec_time;
-        Canny(grey_mess, filters_dst_mess, 100, 150, 3, false, file_null); //messes the caches
+        Canny(canny_src_mess, filters_dst_mess, 100, 150, 3, false, file_null); //messes the caches
 
         exec_time = (double) getTickCount();
         GaussianBlur(grey4k, grey4k, Size(5, 5), 1.1, 0);
@@ -148,7 +146,7 @@ int main(int argc, char **argv) {
         index = i * num_of_tests * num_of_pictures + resolut_index * num_of_tests + 4;
         times[index] = exec_time;
         cvtColor(src4k, grey4k, COLOR_BGR2GRAY); //restores Gaussian src
-        Canny(grey_mess, filters_dst_mess, 100, 150, 3, false, file_null); //messes the caches
+        Canny(canny_src_mess, filters_dst_mess, 100, 150, 3, false, file_null); //messes the caches
 
 //-----------------------------------------------------------------------------------------------------------
         resolut_index = 1;
@@ -158,28 +156,28 @@ int main(int argc, char **argv) {
         exec_time = ((double) getTickCount() - exec_time) * 1000. / getTickFrequency();
         index = i * num_of_tests * num_of_pictures + resolut_index * num_of_tests + 0;
         times[index] = exec_time;
-        Canny(grey_mess, filters_dst_mess, 100, 150, 3, false, file_null); //messes the caches
+        Canny(canny_src_mess, filters_dst_mess, 100, 150, 3, false, file_null); //messes the caches
 
         exec_time = (double) getTickCount();
         Sobel(grey1080, filters_dst_1080, CV_16S, 0, 1);   //y Sobel
         exec_time = ((double) getTickCount() - exec_time) * 1000. / getTickFrequency();
         index = i * num_of_tests * num_of_pictures + resolut_index * num_of_tests + 1;
         times[index] = exec_time;
-        Canny(grey_mess, filters_dst_mess, 100, 150, 3, false, file_null); //messes the caches
+        Canny(canny_src_mess, filters_dst_mess, 100, 150, 3, false, file_null); //messes the caches
 
         exec_time = (double) getTickCount();
         Scharr(grey1080, filters_dst_1080, CV_16S, 1, 0);  //x Scharr
         exec_time = ((double) getTickCount() - exec_time) * 1000. / getTickFrequency();
         index = i * num_of_tests * num_of_pictures + resolut_index * num_of_tests + 2;
         times[index] = exec_time;
-        Canny(grey_mess, filters_dst_mess, 100, 150, 3, false, file_null); //messes the caches
+        Canny(canny_src_mess, filters_dst_mess, 100, 150, 3, false, file_null); //messes the caches
 
         exec_time = (double) getTickCount();
         Scharr(grey1080, filters_dst_1080, CV_16S, 0, 1);  //y Scharr
         exec_time = ((double) getTickCount() - exec_time) * 1000. / getTickFrequency();
         index = i * num_of_tests * num_of_pictures + resolut_index * num_of_tests + 3;
         times[index] = exec_time;
-        Canny(grey_mess, filters_dst_mess, 100, 150, 3, false, file_null); //messes the caches
+        Canny(canny_src_mess, filters_dst_mess, 100, 150, 3, false, file_null); //messes the caches
 
         exec_time = (double) getTickCount();
         GaussianBlur(grey1080, grey1080, Size(5, 5), 1.1, 0);
@@ -187,7 +185,7 @@ int main(int argc, char **argv) {
         index = i * num_of_tests * num_of_pictures + resolut_index * num_of_tests + 4;
         times[index] = exec_time;
         cvtColor(src1080, grey1080, COLOR_BGR2GRAY); //restores Gaussian src
-        Canny(grey_mess, filters_dst_mess, 100, 150, 3, false, file_null); //messes the caches
+        Canny(canny_src_mess, filters_dst_mess, 100, 150, 3, false, file_null); //messes the caches
 
 //-----------------------------------------------------------------------------------------------------------
         resolut_index = 2;
@@ -197,28 +195,28 @@ int main(int argc, char **argv) {
         exec_time = ((double) getTickCount() - exec_time) * 1000. / getTickFrequency();
         index = i * num_of_tests * num_of_pictures + resolut_index * num_of_tests + 0;
         times[index] = exec_time;
-        Canny(grey_mess, filters_dst_mess, 100, 150, 3, false, file_null); //messes the caches
+        Canny(canny_src_mess, filters_dst_mess, 100, 150, 3, false, file_null); //messes the caches
 
         exec_time = (double) getTickCount();
         Sobel(grey_small, filters_dst_small, CV_16S, 0, 1);   //y Sobel
         exec_time = ((double) getTickCount() - exec_time) * 1000. / getTickFrequency();
         index = i * num_of_tests * num_of_pictures + resolut_index * num_of_tests + 1;
         times[index] = exec_time;
-        Canny(grey_mess, filters_dst_mess, 100, 150, 3, false, file_null); //messes the caches
+        Canny(canny_src_mess, filters_dst_mess, 100, 150, 3, false, file_null); //messes the caches
 
         exec_time = (double) getTickCount();
         Scharr(grey_small, filters_dst_small, CV_16S, 1, 0);  //x Scharr
         exec_time = ((double) getTickCount() - exec_time) * 1000. / getTickFrequency();
         index = i * num_of_tests * num_of_pictures + resolut_index * num_of_tests + 2;
         times[index] = exec_time;
-        Canny(grey_mess, filters_dst_mess, 100, 150, 3, false, file_null); //messes the caches
+        Canny(canny_src_mess, filters_dst_mess, 100, 150, 3, false, file_null); //messes the caches
 
         exec_time = (double) getTickCount();
         Scharr(grey_small, filters_dst_small, CV_16S, 0, 1);  //y Scharr
         exec_time = ((double) getTickCount() - exec_time) * 1000. / getTickFrequency();
         index = i * num_of_tests * num_of_pictures + resolut_index * num_of_tests + 3;
         times[index] = exec_time;
-        Canny(grey_mess, filters_dst_mess, 100, 150, 3, false, file_null); //messes the caches
+        Canny(canny_src_mess, filters_dst_mess, 100, 150, 3, false, file_null); //messes the caches
 
         exec_time = (double) getTickCount();
         GaussianBlur(grey_small, grey_small, Size(5, 5), 1.1, 0);
@@ -226,9 +224,8 @@ int main(int argc, char **argv) {
         index = i * num_of_tests * num_of_pictures + resolut_index * num_of_tests + 4;
         times[index] = exec_time;
         cvtColor(src_small, grey_small, COLOR_BGR2GRAY); //restores Gaussian src
-        Canny(grey_mess, filters_dst_mess, 100, 150, 3, false, file_null); //messes the caches
-
-#if CANNY
+        Canny(canny_src_mess, filters_dst_mess, 100, 150, 3, false, file_null); //messes the caches
+#else
         Canny(canny_src_4k, canny_dst, 100, 150, 3, false, file4k);
         Canny(canny_src_mess, canny_dst, 100, 150, 3, false, file_null); //causes canny_dst reallocation and also messes the caches
 
@@ -238,12 +235,38 @@ int main(int argc, char **argv) {
         Canny(canny_src_small, canny_dst, 100, 150, 3, false, file_small);
         Canny(canny_src_mess, canny_dst, 100, 150, 3, false, file_null); //causes canny_dst reallocation and also messes the caches
 #endif
+
     }
+#if !CANNY
+for (int i = 0; i < loops; ++i) {
+    for (int j = 0; j < num_of_pictures; ++j) {
+
+        for (int k = 0; k < num_of_tests; ++k) {
+            index = i * num_of_tests * num_of_pictures + j * num_of_tests + k;
+
+            if (j==0)
+                file4k << times[index] << ";";
+            else if (j==1)
+                file1080 << times[index] << ";";
+            else if (j==2)
+                file_small << times[index] << ";";
+        }
+
+        if (j==0)
+            file4k << "\n";
+        else if (j==1)
+            file1080 << "\n";
+        else if (j==2)
+            file_small << "\n";
+    }
+}
+#endif
 
     file4k.close();
     file1080.close();
     file_small.close();
 
+    cout << "Complete" << endl;
     return 0;
 }
 
