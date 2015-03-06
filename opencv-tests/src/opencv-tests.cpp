@@ -16,11 +16,12 @@
 #include<errno.h>
 
 #define CANNY 1 //1 for canny tests, 0 for filter tests
+#define MEMORY 1
 
 //filename
-#define TYPE "CS" // CS (Canny Steps), CA (Canny All), F (Filters)
-#define CPU "A15" // A7, A9, A15, i7
-#define OPTIMIZ "P" //S (Serial), A (Auto - filters only), P (Parallel)
+#define TYPE "M" // CS (Canny Steps), CA (Canny All), F (Filters), M (Memory)
+#define CPU "A7" // A7, A9, A15, i7
+#define OPTIMIZ "" //S (Serial), A (Auto - filters only), P (Parallel), "" for memory test
 
 using namespace cv;
 using namespace std;
@@ -39,8 +40,12 @@ int main(int argc, char **argv) {
         cout << "Wrong number of arguments" << endl;
 
     uchar num_of_pictures = 3;
-    uchar num_of_tests = 5;
+    uchar num_of_tests = 5; //sobelx, sobely, scharrx, scharry, gauss
+#if !MEMORY
     double * times = (double *) malloc(loops * num_of_tests * num_of_pictures * sizeof(double));
+#else
+    double * times = (double *) malloc(loops * num_of_pictures * sizeof(double));
+#endif
 
     Mat src4k, grey4k;
     src4k = imread((string(getenv("HOME")) + "/Pictures/people.jpg").c_str(), IMREAD_COLOR);
@@ -106,9 +111,40 @@ int main(int argc, char **argv) {
     GaussianBlur(grey_small, canny_src_small, Size(5, 5), 1.1, 0);
     GaussianBlur(grey_mess, canny_src_mess, Size(5, 5), 1.1, 0);
 
+    Mat memtest;
+
     uchar resolut_index;
     int index;
     for (int i = 0; i < loops; ++i) {
+
+#if MEMORY
+
+        resolut_index = 0;
+        exec_time = (double) getTickCount();
+        memtest = Mat::zeros(2802, 4219, CV_16S);
+        exec_time = ((double) getTickCount() - exec_time) * 1000. / getTickFrequency();
+        times[i * num_of_pictures + resolut_index] = exec_time;
+        memtest.release();
+        Canny(canny_src_mess, filters_dst_mess, 100, 150, 3, false, file_null); //messes the caches
+
+        resolut_index = 1;
+        exec_time = (double) getTickCount();
+        memtest = Mat::zeros(1080, 1920, CV_16S);
+        exec_time = ((double) getTickCount() - exec_time) * 1000. / getTickFrequency();
+        times[i * num_of_pictures + resolut_index] = exec_time;
+        memtest.release();
+        Canny(canny_src_mess, filters_dst_mess, 100, 150, 3, false, file_null); //messes the caches
+
+        resolut_index = 2;
+        exec_time = (double) getTickCount();
+        memtest = Mat::zeros(508, 508, CV_16S);
+        exec_time = ((double) getTickCount() - exec_time) * 1000. / getTickFrequency();
+        times[i * num_of_pictures + resolut_index] = exec_time;
+        memtest.release();
+        Canny(canny_src_mess, filters_dst_mess, 100, 150, 3, false, file_null); //messes the caches
+
+#else
+
 #if !CANNY
         resolut_index = 0;
 
@@ -234,9 +270,13 @@ int main(int argc, char **argv) {
 
         Canny(canny_src_small, canny_dst, 100, 150, 3, false, file_small);
         Canny(canny_src_mess, canny_dst, 100, 150, 3, false, file_null); //causes canny_dst reallocation and also messes the caches
-#endif
+#endif // !CANNY
+
+#endif // MEMORY
 
     }
+#if !MEMORY
+
 #if !CANNY
 for (int i = 0; i < loops; ++i) {
     for (int j = 0; j < num_of_pictures; ++j) {
@@ -260,7 +300,22 @@ for (int i = 0; i < loops; ++i) {
             file_small << "\n";
     }
 }
-#endif
+#endif // !CANNY
+
+#else
+
+for (int i = 0; i < loops; ++i) {
+    for (int j = 0; j < num_of_pictures; ++j) {
+        if (j == 0)
+            file4k << times[i * num_of_pictures + j] << "\n";
+        else if (j == 1)
+            file1080 << times[i * num_of_pictures + j] << "\n";
+        else if (j == 2)
+            file_small << times[i * num_of_pictures + j] << "\n";
+    }
+}
+
+#endif // !MEMORY
 
     file4k.close();
     file1080.close();
