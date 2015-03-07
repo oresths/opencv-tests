@@ -16,7 +16,7 @@
 #include<errno.h>
 
 #define CANNY 1 //1 for canny tests, 0 for filter tests
-#define MEMORY 1
+#define MEMORY 1 // If 1, disables canny and filter tests
 
 //filename
 #define TYPE "M" // CS (Canny Steps), CA (Canny All), F (Filters), M (Memory)
